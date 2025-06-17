@@ -9,11 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "start": "node server/index.js",
-    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "postinstall": "npm run build",
-    "clean": "rm -rf dist node_modules/.vite",
-    "build:fresh": "npm run clean && npm run build"
+    "dev:full": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
@@ -51,8 +47,5 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }

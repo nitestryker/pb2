@@ -1,29 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { User } from '../types';
 import { apiService } from '../services/api';
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  avatar_url?: string;
-  bio?: string;
-  website?: string;
-  location?: string;
-  is_admin: boolean;
-  created_at: string;
-}
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (userData: { username: string; email: string; password: string }) => Promise<boolean>;
   logout: () => void;
-  verifyToken: () => Promise<void>;
-  setLoading: (loading: boolean) => void;
+  updateProfile: (updates: Partial<User>) => void;
+  verifyToken: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -35,82 +24,70 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
 
       login: async (email: string, password: string) => {
+        set({ isLoading: true });
         try {
-          set({ isLoading: true });
           const response = await apiService.login(email, password);
-          
-          set({
-            user: response.user,
+          set({ 
+            user: response.user, 
             token: response.token,
             isAuthenticated: true,
-            isLoading: false,
+            isLoading: false 
           });
+          return true;
         } catch (error) {
+          console.error('Login failed:', error);
           set({ isLoading: false });
-          throw error;
+          return false;
         }
       },
 
-      register: async (userData: { username: string; email: string; password: string }) => {
+      register: async (userData) => {
+        set({ isLoading: true });
         try {
-          set({ isLoading: true });
           const response = await apiService.register(userData);
-          
-          set({
-            user: response.user,
+          set({ 
+            user: response.user, 
             token: response.token,
             isAuthenticated: true,
-            isLoading: false,
+            isLoading: false 
           });
+          return true;
         } catch (error) {
+          console.error('Registration failed:', error);
           set({ isLoading: false });
-          throw error;
+          return false;
         }
       },
 
       logout: () => {
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
+        set({ user: null, token: null, isAuthenticated: false });
+      },
+
+      updateProfile: (updates) => {
+        const { user } = get();
+        if (user) {
+          const updatedUser = { ...user, ...updates };
+          set({ user: updatedUser });
+        }
       },
 
       verifyToken: async () => {
         const { token } = get();
-        if (!token) return;
+        if (!token) return false;
 
         try {
-          set({ isLoading: true });
           const response = await apiService.verifyToken();
-          
-          set({
-            user: response.user,
-            isAuthenticated: true,
-            isLoading: false,
-          });
+          set({ user: response.user, isAuthenticated: true });
+          return true;
         } catch (error) {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
+          console.error('Token verification failed:', error);
+          set({ user: null, token: null, isAuthenticated: false });
+          return false;
         }
-      },
-
-      setLoading: (loading: boolean) => {
-        set({ isLoading: loading });
-      },
+      }
     }),
     {
       name: 'pasteforge-auth',
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
     }
   )
 );

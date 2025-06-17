@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -6,46 +6,23 @@ import {
   Zap, 
   Shield, 
   Users, 
-  Clock, 
-  Star,
-  ArrowRight,
-  Plus,
+  Brain, 
+  Folder, 
+  Star, 
   TrendingUp,
-  Globe
+  ArrowRight,
+  GitBranch,
+  MessageSquare
 } from 'lucide-react';
-import { apiService } from '../services/api';
+import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
+import { PasteCard } from '../components/Paste/PasteCard';
 
-interface Paste {
-  id: number;
-  title: string;
-  syntax_language: string;
-  author: {
-    username: string;
-  };
-  created_at: string;
-  view_count: number;
-}
-
-const HomePage: React.FC = () => {
-  const { user } = useAuthStore();
-  const [recentPastes, setRecentPastes] = useState<Paste[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRecentPastes = async () => {
-      try {
-        const response = await apiService.getRecentPastes(6);
-        setRecentPastes(response.pastes || []);
-      } catch (error) {
-        console.error('Failed to fetch recent pastes:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecentPastes();
-  }, []);
+export const HomePage: React.FC = () => {
+  const { pastes } = useAppStore();
+  const { isAuthenticated } = useAuthStore();
+  
+  const recentPastes = pastes.slice(0, 6);
 
   const features = [
     {
@@ -54,85 +31,100 @@ const HomePage: React.FC = () => {
       description: 'Support for 200+ programming languages with beautiful syntax highlighting'
     },
     {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'Optimized performance for instant loading and smooth user experience'
+      icon: Folder,
+      title: 'Project Management',
+      description: 'Organize your code into projects with branches and collaboration features'
     },
     {
-      icon: Shield,
-      title: 'Secure & Private',
-      description: 'Zero-knowledge encryption for sensitive code with client-side security'
+      icon: Brain,
+      title: 'AI-Powered Analysis',
+      description: 'Get intelligent code summaries and smart content recommendations'
     },
     {
       icon: Users,
-      title: 'Collaboration',
-      description: 'Share and collaborate on code projects with team members'
+      title: 'Team Collaboration',
+      description: 'Work together with real-time collaboration and communication tools'
     },
     {
-      icon: Clock,
+      icon: Shield,
+      title: 'Enterprise Security',
+      description: 'Advanced security features with role-based access control'
+    },
+    {
+      icon: GitBranch,
       title: 'Version Control',
-      description: 'Track changes and manage different versions of your code snippets'
-    },
-    {
-      icon: Globe,
-      title: 'Public Archive',
-      description: 'Discover and learn from a vast collection of public code snippets'
+      description: 'Track changes with comprehensive version history and diff viewing'
     }
   ];
 
   const stats = [
-    { label: 'Code Snippets', value: '50K+', icon: Code2 },
-    { label: 'Active Users', value: '10K+', icon: Users },
-    { label: 'Languages', value: '200+', icon: Star },
-    { label: 'Daily Views', value: '100K+', icon: TrendingUp }
+    { label: 'Active Users', value: '10,000+' },
+    { label: 'Code Snippets', value: '50,000+' },
+    { label: 'Projects', value: '5,000+' },
+    { label: 'Languages', value: '200+' }
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="space-y-16">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-              Share Code
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                {' '}Beautifully
-              </span>
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-              PasteForge is the modern pastebin platform for developers. Share, collaborate, 
-              and manage your code snippets with advanced features and beautiful syntax highlighting.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <section className="relative overflow-hidden py-20 lg:py-32">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 rounded-3xl"></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center max-w-4xl mx-auto">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 leading-tight"
+            >
+              The Ultimate{' '}
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Code Sharing
+              </span>{' '}
+              Platform
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-xl text-slate-600 dark:text-slate-300 mb-8 leading-relaxed"
+            >
+              Share code snippets, manage projects, collaborate with teams, and leverage AI-powered insights. 
+              Everything you need to build better software, together.
+            </motion.p>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            >
               <Link
                 to="/create"
-                className="inline-flex items-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg"
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-2xl hover:shadow-indigo-500/25 transform hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
-                <Plus className="h-5 w-5 mr-2" />
-                Create New Paste
+                <Code2 className="h-5 w-5" />
+                <span>Start Coding</span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
+              
               <Link
-                to="/archive"
-                className="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg"
+                to="/explore"
+                className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-8 py-4 rounded-xl font-semibold border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-300 flex items-center space-x-2"
               >
-                Browse Archive
-                <ArrowRight className="h-5 w-5 ml-2" />
+                <TrendingUp className="h-5 w-5" />
+                <span>Explore</span>
               </Link>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <section className="py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -141,13 +133,10 @@ const HomePage: React.FC = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg mb-4">
-                  <stat.icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-2">
                   {stat.value}
                 </div>
-                <div className="text-gray-600 dark:text-gray-400">
+                <div className="text-slate-600 dark:text-slate-400 font-medium">
                   {stat.label}
                 </div>
               </motion.div>
@@ -157,38 +146,34 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Powerful Features
+      <section className="py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              Powerful Features for Modern Development
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Everything you need to share, manage, and collaborate on code snippets
+            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+              From simple code sharing to enterprise-grade project management, 
+              PasteForge has everything you need to streamline your development workflow.
             </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-300 hover:shadow-xl group"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg mb-6">
-                  <feature.icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                   {feature.description}
                 </p>
               </motion.div>
@@ -197,119 +182,72 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Recent Pastes Section */}
-      <section className="py-20 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Recent Pastes
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Discover the latest code snippets shared by our community
-            </p>
-          </motion.div>
-
-          {isLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, index) => (
-                <div key={index} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded mb-4"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          ) : recentPastes.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentPastes.map((paste, index) => (
-                <motion.div
-                  key={paste.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <Link
-                    to={`/paste/${paste.id}`}
-                    className="block bg-white dark:bg-gray-700 rounded-lg p-6 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 truncate">
-                      {paste.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        {paste.syntax_language}
-                      </span>
-                      <span>{paste.view_count} views</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>by {paste.author?.username || 'Anonymous'}</span>
-                      <span>{new Date(paste.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Code2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                No recent pastes available
+      {/* Recent Pastes */}
+      <section className="py-16 bg-slate-50 dark:bg-slate-800/50 rounded-3xl">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Recent Code Snippets
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300">
+                Discover the latest code shared by our community
               </p>
             </div>
-          )}
-
-          <div className="text-center mt-12">
             <Link
-              to="/archive"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
+              to="/explore"
+              className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
             >
-              View All Pastes
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <span>View All</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {recentPastes.map((paste, index) => (
+              <motion.div
+                key={paste.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <PasteCard paste={paste} />
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      {!user && (
-        <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Ready to Get Started?
+      {!isAuthenticated && (
+        <section className="py-16">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-12 text-center">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                Ready to Start Building?
               </h2>
-              <p className="text-xl text-blue-100 mb-8">
-                Join thousands of developers who trust PasteForge for their code sharing needs
+              <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+                Join thousands of developers who use PasteForge to share code, 
+                manage projects, and collaborate with their teams.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/register"
-                  className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
                 >
-                  Sign Up Free
+                  Create Free Account
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transition-colors duration-200"
+                  className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-indigo-600 transition-colors"
                 >
                   Sign In
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
       )}
     </div>
   );
 };
-
-export default HomePage;

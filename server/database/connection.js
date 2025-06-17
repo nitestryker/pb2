@@ -5,35 +5,27 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Create connection pool with SSL support for production
+// Create connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { 
-    rejectUnauthorized: false 
-  } : false,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Increased for Render
+  connectionTimeoutMillis: 2000,
 });
 
-// Test database connection with retry logic
-export async function testConnection(retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const client = await pool.connect();
-      const result = await client.query('SELECT NOW()');
-      client.release();
-      console.log('✅ Database connection successful:', result.rows[0].now);
-      return true;
-    } catch (error) {
-      console.error(`❌ Database connection attempt ${i + 1} failed:`, error.message);
-      if (i < retries - 1) {
-        console.log(`⏳ Retrying in ${(i + 1) * 2} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
-      }
-    }
+// Test database connection
+export async function testConnection() {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW()');
+    client.release();
+    console.log('✅ Database connection successful:', result.rows[0].now);
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    return false;
   }
-  return false;
 }
 
 // Initialize database schema
