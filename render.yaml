@@ -12,7 +12,7 @@ services:
     name: pasteforge-api
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
@@ -23,19 +23,9 @@ services:
         fromDatabase:
           name: pasteforge-db
           property: connectionString
+      - key: VITE_API_URL
+        value: /api
     healthCheckPath: /api/health
 
-  # Frontend Static Site
-  - type: static
-    name: pasteforge-frontend
-    env: static
-    plan: free
-    buildCommand: npm run build
-    staticPublishPath: ./dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://pasteforge-api.onrender.com/api
+  # Note: We're serving the frontend through the backend in production
+  # This simplifies deployment and avoids CORS issues
