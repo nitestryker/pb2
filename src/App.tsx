@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './store/authStore';
+import { useAppStore } from './store/appStore';
 import { Layout } from './components/Layout/Layout';
 import { HomePage } from './pages/HomePage';
 import { PastePage } from './pages/PastePage';
@@ -20,6 +22,24 @@ import { AdminRoute } from './components/Auth/AdminRoute';
 
 function App() {
   const { theme } = useThemeStore();
+  const { verifyToken } = useAuthStore();
+  const { loadRecentPastes } = useAppStore();
+
+  useEffect(() => {
+    // Apply theme to document
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+  }, [theme]);
+
+  useEffect(() => {
+    // Initialize app
+    const initializeApp = async () => {
+      await verifyToken();
+      await loadRecentPastes();
+    };
+    
+    initializeApp();
+  }, [verifyToken, loadRecentPastes]);
 
   return (
     <div className={theme}>

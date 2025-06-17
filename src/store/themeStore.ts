@@ -9,19 +9,46 @@ interface ThemeState {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: 'dark',
       
       toggleTheme: () => {
-        set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' }));
+        set((state) => {
+          const newTheme = state.theme === 'light' ? 'dark' : 'light';
+          // Apply theme to document immediately
+          if (typeof document !== 'undefined') {
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(newTheme);
+          }
+          return { theme: newTheme };
+        });
       },
       
       setTheme: (theme) => {
         set({ theme });
+        // Apply theme to document immediately
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(theme);
+        }
       },
     }),
     {
       name: 'pasteforge-theme',
+      onRehydrateStorage: () => (state) => {
+        // Apply theme to document when store is rehydrated
+        if (state && typeof document !== 'undefined') {
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(state.theme);
+        }
+      },
     }
   )
 );
+
+// Initialize theme on store creation
+if (typeof document !== 'undefined') {
+  const store = useThemeStore.getState();
+  document.documentElement.classList.remove('light', 'dark');
+  document.documentElement.classList.add(store.theme);
+}
