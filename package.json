@@ -11,7 +11,9 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "clean": "rm -rf dist node_modules/.vite",
+    "build:fresh": "npm run clean && npm run build"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
