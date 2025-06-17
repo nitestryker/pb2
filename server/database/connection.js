@@ -165,7 +165,7 @@ export async function initializeDatabase() {
     
     if (adminExists.rows.length === 0) {
       // Import bcrypt for password hashing
-      const bcrypt = await import('bcryptjs');
+      const bcrypt = await import('bcrypt');
       const hashedPassword = await bcrypt.hash('password', 10);
       
       await client.query(`
