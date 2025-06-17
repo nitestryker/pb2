@@ -94,21 +94,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, '../dist')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, '../dist/index.html'));
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found'
   });
-} else {
-  // 404 handler for non-production
-  app.use('*', (req, res) => {
-    res.status(404).json({
-      error: 'Route not found'
-    });
-  });
-}
+});
 
 // Initialize database and start server
 async function startServer() {
