@@ -20,7 +20,8 @@ import {
   Lock,
   Loader,
   Link,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { formatDistanceToNow } from 'date-fns';
@@ -122,7 +123,7 @@ export const PastePage: React.FC = () => {
       // Extract encryption key from URL fragment
       const keyString = extractKeyFromUrl();
       if (!keyString) {
-        throw new Error('Decryption key not found in URL. Make sure you have the complete link including the #key part.');
+        throw new Error('Missing decryption key. Make sure you have the complete link including the #key part.');
       }
       
       // Parse encrypted content
@@ -153,6 +154,16 @@ export const PastePage: React.FC = () => {
     }
   };
 
+  const handleCopyAccessLink = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Access link copied to clipboard!');
+    } catch (error) {
+      toast.error('Failed to copy link');
+    }
+  };
+
   const handleCopy = async () => {
     if (!paste) return;
     
@@ -168,16 +179,6 @@ export const PastePage: React.FC = () => {
       toast.success('Code copied to clipboard!');
     } catch (error) {
       toast.error('Failed to copy code');
-    }
-  };
-
-  const handleCopyAccessLink = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Access link copied to clipboard!');
-    } catch (error) {
-      toast.error('Failed to copy link');
     }
   };
 
@@ -288,7 +289,7 @@ export const PastePage: React.FC = () => {
                 </h3>
                 <p className="text-sm text-green-800 dark:text-green-400 mb-4">
                   This zero-knowledge paste can only be accessed with the complete URL including the encryption key. 
-                  Share this link to allow others to view the decrypted content.
+                  Share this link to allow others to view the decrypted content. Without the key, this paste cannot be decrypted.
                 </p>
                 <div className="flex items-center space-x-3">
                   <div className="flex-1 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-700 rounded-lg p-3 font-mono text-sm break-all">
@@ -305,9 +306,9 @@ export const PastePage: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowAccessLink(false)}
-                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1"
               >
-                ×
+                <X className="h-5 w-5" />
               </button>
             </div>
           </motion.div>

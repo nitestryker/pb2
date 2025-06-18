@@ -59,26 +59,46 @@ class ApiService {
   private async makeRequest(url: string, options: RequestInit = {}) {
     try {
       console.log(`Making request to: ${url}`);
+      
+      // Add timeout to requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch(url, {
         ...options,
+        signal: controller.signal,
         headers: {
           ...this.getAuthHeaders(),
           ...options.headers
         }
       });
+      
+      clearTimeout(timeoutId);
       return this.handleResponse(response);
     } catch (error) {
       console.error(`Request failed for ${url}:`, error);
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error - unable to connect to server. Please check your internet connection.');
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - server may be sleeping. Please try again in a moment.');
+        }
+        if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Network error - unable to connect to server. The backend may be starting up, please wait a moment and try again.');
+        }
       }
+      
       throw error;
     }
   }
 
-  // Health check
+  // Health check with fallback
   async healthCheck() {
-    return this.makeRequest(`${API_BASE_URL}/health`);
+    try {
+      return await this.makeRequest(`${API_BASE_URL}/health`);
+    } catch (error) {
+      console.warn('Health check failed, backend may be sleeping:', error);
+      throw error;
+    }
   }
 
   // Auth endpoints
@@ -172,3 +192,8 @@ console.log('  Base URL:', API_BASE_URL);
 console.log('  Environment:', import.meta.env.MODE);
 console.log('  Production mode:', import.meta.env.PROD);
 console.log('  Use local backend:', import.meta.env.VITE_USE_LOCAL_BACKEND === 'true');
+
+// Test backend connectivity on startup
+apiService.healthCheck()
+  .then(() => console.log('✅ Backend is reachable'))
+  .catch(() => console.warn('⚠️ Backend may be sleeping - will retry on first request'));

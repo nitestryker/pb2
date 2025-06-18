@@ -46,6 +46,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ pastes, isLoading: false });
     } catch (error) {
       console.error('Failed to load recent pastes:', error);
+      
+      // Show user-friendly error message
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('sleeping')) {
+          console.warn('Backend may be sleeping, will retry later');
+        }
+      }
+      
       set({ isLoading: false });
     }
   },
@@ -57,12 +65,16 @@ export const useAppStore = create<AppState>((set, get) => ({
         content: pasteData.content,
         language: pasteData.language,
         isPrivate: !pasteData.isPublic && !pasteData.isUnlisted,
+        isZeroKnowledge: pasteData.isZeroKnowledge,
+        encryptedContent: pasteData.encryptedContent,
         tags: pasteData.tags,
         expiration: pasteData.expiresAt
       });
       
-      // Reload recent pastes to include the new one
-      get().loadRecentPastes();
+      // Reload recent pastes to include the new one (only if not zero-knowledge)
+      if (!pasteData.isZeroKnowledge) {
+        get().loadRecentPastes();
+      }
       
       return response.id;
     } catch (error) {

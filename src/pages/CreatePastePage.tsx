@@ -196,7 +196,19 @@ export const CreatePastePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to create paste:', error);
-      toast.error('Failed to create paste. Please try again.');
+      
+      // Better error handling for different scenarios
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('sleeping')) {
+          toast.error('Server is starting up. Please wait a moment and try again.');
+        } else if (error.message.includes('Network error')) {
+          toast.error('Connection failed. Please check your internet and try again.');
+        } else {
+          toast.error(error.message || 'Failed to create paste. Please try again.');
+        }
+      } else {
+        toast.error('Failed to create paste. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -276,7 +288,7 @@ export const CreatePastePage: React.FC = () => {
       setEncryptedContent('');
       setEncryptionReady(false);
       
-      toast.info('Zero-knowledge mode enabled. Content will be encrypted client-side.');
+      toast('Zero-knowledge mode enabled. Content will be encrypted client-side.');
       
       // Trigger initial encryption if content exists
       if (content.trim()) {
