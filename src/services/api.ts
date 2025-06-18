@@ -2,13 +2,20 @@
 // In development: uses proxy or localhost:3001
 // In production: uses the full Render backend URL
 const getApiBaseUrl = () => {
-  // Check if we're in production
+  // Check if we have an explicit API URL set
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+  
+  // Fallback logic based on environment
   if (import.meta.env.PROD) {
-    // In production, use the full backend URL from environment variable
-    return import.meta.env.VITE_API_URL || 'https://pb2-ahh9.onrender.com/api';
+    // In production, use the full backend URL
+    return 'https://pb2-ahh9.onrender.com/api';
   } else {
     // In development, use relative path (works with Vite proxy) or localhost
-    return import.meta.env.VITE_API_URL || '/api';
+    return '/api';
   }
 };
 
@@ -35,58 +42,67 @@ class ApiService {
 
   private async handleResponse(response: Response) {
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+      throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
     }
     return response.json();
   }
 
+  private async makeRequest(url: string, options: RequestInit = {}) {
+    try {
+      console.log(`Making request to: ${url}`);
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...this.getAuthHeaders(),
+          ...options.headers
+        }
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error(`Request failed for ${url}:`, error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error - unable to connect to server');
+      }
+      throw error;
+    }
+  }
+
   // Health check
   async healthCheck() {
-    const response = await fetch(`${API_BASE_URL}/health`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/health`);
   }
 
   // Auth endpoints
   async login(email: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    return this.makeRequest(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
       body: JSON.stringify({ email, password })
     });
-    return this.handleResponse(response);
   }
 
   async register(userData: { username: string; email: string; password: string }) {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    return this.makeRequest(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
       body: JSON.stringify(userData)
     });
-    return this.handleResponse(response);
   }
 
   async verifyToken() {
-    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-      headers: this.getAuthHeaders()
-    });
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/auth/verify`);
   }
 
   // Paste endpoints
   async getRecentPastes(limit = 20) {
-    const response = await fetch(`${API_BASE_URL}/pastes/recent?limit=${limit}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/pastes/recent?limit=${limit}`);
   }
 
   async getPasteArchive(page = 1, limit = 20) {
-    const response = await fetch(`${API_BASE_URL}/pastes/archive?page=${page}&limit=${limit}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/pastes/archive?page=${page}&limit=${limit}`);
   }
 
   async getPaste(id: string) {
-    const response = await fetch(`${API_BASE_URL}/pastes/${id}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/pastes/${id}`);
   }
 
   async createPaste(pasteData: {
@@ -99,17 +115,14 @@ class ApiService {
     expiration?: string;
     tags?: string[];
   }) {
-    const response = await fetch(`${API_BASE_URL}/pastes`, {
+    return this.makeRequest(`${API_BASE_URL}/pastes`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
       body: JSON.stringify(pasteData)
     });
-    return this.handleResponse(response);
   }
 
   async getRelatedPastes(id: string, limit = 6) {
-    const response = await fetch(`${API_BASE_URL}/pastes/${id}/related?limit=${limit}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/pastes/${id}/related?limit=${limit}`);
   }
 
   async downloadPaste(id: string) {
@@ -122,41 +135,30 @@ class ApiService {
 
   // User endpoints
   async getUser(username: string) {
-    const response = await fetch(`${API_BASE_URL}/users/${username}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/users/${username}`);
   }
 
   async getUserPastes(username: string, limit = 20) {
-    const response = await fetch(`${API_BASE_URL}/users/${username}/pastes?limit=${limit}`);
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/users/${username}/pastes?limit=${limit}`);
   }
 
   // Admin endpoints
   async getAdminStats() {
-    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-      headers: this.getAuthHeaders()
-    });
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/admin/stats`);
   }
 
   async getAdminUsers(page = 1, limit = 20) {
-    const response = await fetch(`${API_BASE_URL}/admin/users?page=${page}&limit=${limit}`, {
-      headers: this.getAuthHeaders()
-    });
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/admin/users?page=${page}&limit=${limit}`);
   }
 
   async getLanguageStats() {
-    const response = await fetch(`${API_BASE_URL}/admin/languages`, {
-      headers: this.getAuthHeaders()
-    });
-    return this.handleResponse(response);
+    return this.makeRequest(`${API_BASE_URL}/admin/languages`);
   }
 }
 
 export const apiService = new ApiService();
 
-// Log the API base URL for debugging (only in development)
-if (import.meta.env.DEV) {
-  console.log('API Base URL:', API_BASE_URL);
-}
+// Log the API base URL for debugging
+console.log('API Base URL:', API_BASE_URL);
+console.log('Environment:', import.meta.env.MODE);
+console.log('Production mode:', import.meta.env.PROD);

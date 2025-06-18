@@ -38,12 +38,18 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// CORS configuration
+// CORS configuration - Updated for Render deployment
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-domain.com'] 
+    ? [
+        'https://pb2-ahh9.onrender.com',
+        'https://pasteforge.onrender.com',
+        /\.onrender\.com$/
+      ]
     : ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parsing middleware
@@ -58,7 +64,8 @@ app.get('/api/health', async (req, res) => {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       database: dbStatus ? 'connected' : 'disconnected',
-      version: '1.0.0'
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development'
     });
   } catch (error) {
     res.status(500).json({
@@ -127,10 +134,11 @@ async function startServer() {
     await initializeDatabase();
     console.log('✅ Database schema initialized');
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
       console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🔗 CORS origins: ${process.env.NODE_ENV === 'production' ? 'Render domains' : 'localhost'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
