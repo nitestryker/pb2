@@ -25,6 +25,8 @@ export interface Paste {
   expiresAt?: string;
   isPublic: boolean;
   isUnlisted?: boolean; // New field for unlisted pastes
+  isZeroKnowledge?: boolean; // New field for zero-knowledge encryption
+  encryptedContent?: string; // Encrypted content for zero-knowledge pastes
   views: number;
   forks: number;
   stars: number;
@@ -180,4 +182,16 @@ export interface AppSettings {
   relatedContentEnabled: boolean;
   maxAIRequestsPerDay: number;
   defaultPasteExpiration: string;
+}
+
+// Zero-Knowledge Encryption Types
+export interface EncryptedPasteData {
+  data: string; // Base64 encoded encrypted content
+  iv: string;   // Base64 encoded initialization vector
+}
+
+export interface ZeroKnowledgePaste extends Omit<Paste, 'content'> {
+  content: null; // Content is always null for zero-knowledge pastes
+  encryptedContent: string; // JSON string of EncryptedPasteData
+  isZeroKnowledge: true;
 }

@@ -298,6 +298,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Anonymous users cannot create private pastes' });
     }
     
+    // Zero-knowledge pastes cannot be private or public (they're always unlisted)
+    if (isZeroKnowledge && isPrivate) {
+      return res.status(400).json({ error: 'Zero-knowledge pastes cannot be private' });
+    }
+    
     await client.query('BEGIN');
     
     // Insert paste
@@ -319,7 +324,7 @@ router.post('/', async (req, res) => {
       isZeroKnowledge ? null : content,
       language,
       userId, // Will be null for anonymous users
-      isPrivate,
+      isZeroKnowledge ? false : isPrivate, // Zero-knowledge pastes are always unlisted (not private, not public)
       isZeroKnowledge,
       isZeroKnowledge ? encryptedContent : null,
       expiration ? new Date(expiration) : null
@@ -397,7 +402,7 @@ router.get('/:id/download', async (req, res) => {
     
     // Can't download zero-knowledge pastes (content is encrypted)
     if (paste.is_zero_knowledge) {
-      return res.status(403).json({ error: 'Cannot download zero-knowledge pastes' });
+      return res.status(403).json({ error: 'Cannot download zero-knowledge pastes without decryption key' });
     }
     
     const filename = `${paste.title.replace(/[^a-zA-Z0-9]/g, '_')}.${paste.syntax_language}`;

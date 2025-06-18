@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, Eye, Settings, Upload, Wand2, Info, Globe, Link2, Lock } from 'lucide-react';
+import { Save, Eye, Settings, Upload, Wand2, Info, Globe, Link2, Lock, Shield, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
+import { 
+  generateEncryptionKey, 
+  exportKeyToString, 
+  encryptContent, 
+  isWebCryptoSupported,
+  addKeyToUrl 
+} from '../utils/crypto';
 import toast from 'react-hot-toast';
 
 const languages = [
@@ -34,8 +41,10 @@ export const CreatePastePage: React.FC = () => {
   const [tags, setTags] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [isZeroKnowledge, setIsZeroKnowledge] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!content.trim()) {
@@ -49,34 +58,95 @@ export const CreatePastePage: React.FC = () => {
       return;
     }
 
-    const pasteData = {
-      title: title.trim() || 'Untitled',
-      content: content.trim(),
-      language,
-      author: isAuthenticated && user ? user : {
-        id: 'anonymous',
-        username: 'Anonymous',
-        email: '',
-        avatar: undefined,
-        bio: undefined,
-        website: undefined,
-        location: undefined,
-        joinDate: new Date().toISOString(),
-        isAdmin: false,
-        followers: 0,
-        following: 0,
-        pasteCount: 0,
-        projectCount: 0
-      },
-      isPublic: visibility === 'public',
-      isUnlisted: visibility === 'unlisted',
-      expiresAt: expiration ? calculateExpirationDate(expiration) : undefined,
-      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
-    };
+    // Check Web Crypto API support for zero-knowledge pastes
+    if (isZeroKnowledge && !isWebCryptoSupported()) {
+      toast.error('Zero-knowledge encryption is not supported in your browser');
+      return;
+    }
 
-    addPaste(pasteData);
-    toast.success('Paste created successfully!');
-    navigate('/');
+    setIsSubmitting(true);
+
+    try {
+      let finalContent = content.trim();
+      let encryptedContent = '';
+      let encryptionKey = '';
+      let finalVisibility = visibility;
+
+      // Handle zero-knowledge encryption
+      if (isZeroKnowledge) {
+        try {
+          // Generate encryption key
+          const cryptoKey = await generateEncryptionKey();
+          encryptionKey = await exportKeyToString(cryptoKey);
+          
+          // Encrypt content
+          const encrypted = await encryptContent(finalContent, cryptoKey);
+          encryptedContent = JSON.stringify({
+            data: encrypted.encryptedData,
+            iv: encrypted.iv
+          });
+          
+          // Zero-knowledge pastes are always unlisted
+          finalVisibility = 'unlisted';
+          finalContent = ''; // Clear original content
+          
+          toast.success('Content encrypted successfully!');
+        } catch (error) {
+          console.error('Encryption failed:', error);
+          toast.error('Failed to encrypt content. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const pasteData = {
+        title: title.trim() || 'Untitled',
+        content: finalContent,
+        language,
+        author: isAuthenticated && user ? user : {
+          id: 'anonymous',
+          username: 'Anonymous',
+          email: '',
+          avatar: undefined,
+          bio: undefined,
+          website: undefined,
+          location: undefined,
+          joinDate: new Date().toISOString(),
+          isAdmin: false,
+          followers: 0,
+          following: 0,
+          pasteCount: 0,
+          projectCount: 0
+        },
+        isPublic: finalVisibility === 'public',
+        isUnlisted: finalVisibility === 'unlisted',
+        isZeroKnowledge,
+        encryptedContent: isZeroKnowledge ? encryptedContent : undefined,
+        expiresAt: expiration ? calculateExpirationDate(expiration) : undefined,
+        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      };
+
+      const pasteId = await addPaste(pasteData);
+      
+      if (pasteId) {
+        toast.success('Paste created successfully!');
+        
+        // For zero-knowledge pastes, navigate with the encryption key in the URL fragment
+        if (isZeroKnowledge && encryptionKey) {
+          const pasteUrl = `/paste/${pasteId}#${encryptionKey}`;
+          navigate(pasteUrl);
+        } else {
+          navigate(`/paste/${pasteId}`);
+        }
+      } else {
+        throw new Error('Failed to create paste');
+      }
+    } catch (error) {
+      console.error('Failed to create paste:', error);
+      toast.error('Failed to create paste. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const calculateExpirationDate = (expiration: string): string => {
@@ -133,6 +203,25 @@ export const CreatePastePage: React.FC = () => {
     }, 1500);
   };
 
+  // Handle zero-knowledge toggle
+  const handleZeroKnowledgeToggle = (checked: boolean) => {
+    setIsZeroKnowledge(checked);
+    
+    if (checked) {
+      // Zero-knowledge pastes are automatically unlisted
+      setVisibility('unlisted');
+      
+      // Check browser support
+      if (!isWebCryptoSupported()) {
+        toast.error('Zero-knowledge encryption is not supported in your browser');
+        setIsZeroKnowledge(false);
+        return;
+      }
+      
+      toast.info('Zero-knowledge mode enabled. Your paste will be encrypted client-side.');
+    }
+  };
+
   // Visibility options configuration
   const visibilityOptions = [
     {
@@ -140,7 +229,7 @@ export const CreatePastePage: React.FC = () => {
       icon: Globe,
       title: 'Public',
       description: 'Visible in archive and search results',
-      available: true,
+      available: !isZeroKnowledge, // Zero-knowledge pastes cannot be public
       color: 'from-green-500 to-emerald-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       borderColor: 'border-green-200 dark:border-green-800',
@@ -150,7 +239,7 @@ export const CreatePastePage: React.FC = () => {
       id: 'unlisted',
       icon: Link2,
       title: 'Unlisted',
-      description: 'Only accessible via direct link',
+      description: isZeroKnowledge ? 'Required for zero-knowledge pastes' : 'Only accessible via direct link',
       available: true,
       color: 'from-blue-500 to-indigo-600',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
@@ -162,7 +251,7 @@ export const CreatePastePage: React.FC = () => {
       icon: Lock,
       title: 'Private',
       description: isAuthenticated ? 'Only you can see this paste' : 'Requires account',
-      available: isAuthenticated,
+      available: isAuthenticated && !isZeroKnowledge, // Zero-knowledge pastes cannot be private
       color: 'from-purple-500 to-violet-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       borderColor: 'border-purple-200 dark:border-purple-800',
@@ -212,6 +301,28 @@ export const CreatePastePage: React.FC = () => {
           </motion.div>
         )}
 
+        {/* Zero-Knowledge Warning */}
+        {!isWebCryptoSupported() && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+          >
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium text-red-900 dark:text-red-300 mb-1">
+                  Zero-Knowledge Encryption Unavailable
+                </h3>
+                <p className="text-sm text-red-800 dark:text-red-400">
+                  Your browser doesn't support the Web Crypto API required for zero-knowledge encryption. 
+                  Please use a modern browser like Chrome, Firefox, Safari, or Edge.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title and AI Generation */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
@@ -236,6 +347,43 @@ export const CreatePastePage: React.FC = () => {
               placeholder="Enter a descriptive title for your paste"
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
             />
+          </div>
+
+          {/* Zero-Knowledge Encryption Option */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex items-center h-5">
+                <input
+                  id="zero-knowledge"
+                  type="checkbox"
+                  checked={isZeroKnowledge}
+                  onChange={(e) => handleZeroKnowledgeToggle(e.target.checked)}
+                  disabled={!isWebCryptoSupported()}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 rounded disabled:opacity-50"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="zero-knowledge" className="flex items-center space-x-2 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <Shield className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Enable Zero-Knowledge Encryption</span>
+                </label>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Your content will be encrypted in your browser before being sent to the server. 
+                  Even we can't read it without the decryption key, which is stored in the URL fragment.
+                </p>
+                {isZeroKnowledge && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-amber-800 dark:text-amber-300">
+                        <strong>Important:</strong> Zero-knowledge pastes are automatically set to "Unlisted" and cannot be made public or private. 
+                        Keep the full URL (including the #key part) safe - without it, the content cannot be decrypted.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Settings Row */}
@@ -386,6 +534,12 @@ export const CreatePastePage: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Code Editor
+                  {isZeroKnowledge && (
+                    <span className="ml-2 inline-flex items-center space-x-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
+                      <Shield className="h-3 w-3" />
+                      <span>Encrypted</span>
+                    </span>
+                  )}
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
@@ -447,15 +601,26 @@ export const CreatePastePage: React.FC = () => {
               type="button"
               onClick={() => navigate(-1)}
               className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              disabled={isSubmitting}
+              className="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              <Save className="h-5 w-5" />
-              <span>Create Paste</span>
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>{isZeroKnowledge ? 'Encrypting...' : 'Creating...'}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5" />
+                  <span>Create Paste</span>
+                </>
+              )}
             </button>
           </div>
         </form>
