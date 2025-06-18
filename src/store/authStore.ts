@@ -73,7 +73,10 @@ export const useAuthStore = create<AuthState>()(
 
       verifyToken: async () => {
         const { token } = get();
-        if (!token) return false;
+        if (!token) {
+          set({ isAuthenticated: false });
+          return false;
+        }
 
         try {
           const response = await apiService.verifyToken();
