@@ -145,7 +145,7 @@ export const CreatePastePage: React.FC = () => {
                 type="button"
                 onClick={generateSmartTitle}
                 disabled={isGeneratingTitle}
-                className="flex items-center space-x-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:opacity-50"
+                className="flex items-center space-x-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:opacity-50 transition-colors"
               >
                 <Wand2 className={`h-4 w-4 ${isGeneratingTitle ? 'animate-spin' : ''}`} />
                 <span>{isGeneratingTitle ? 'Generating...' : 'AI Generate'}</span>
@@ -156,7 +156,7 @@ export const CreatePastePage: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a descriptive title for your paste"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
             />
           </div>
 
@@ -170,10 +170,10 @@ export const CreatePastePage: React.FC = () => {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100"
                 >
                   {languages.map(lang => (
-                    <option key={lang} value={lang}>
+                    <option key={lang} value={lang} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                       {lang.charAt(0).toUpperCase() + lang.slice(1)}
                     </option>
                   ))}
@@ -187,10 +187,10 @@ export const CreatePastePage: React.FC = () => {
                 <select
                   value={expiration}
                   onChange={(e) => setExpiration(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100"
                 >
                   {expirationOptions.map(option => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                       {option.label}
                     </option>
                   ))}
@@ -207,7 +207,7 @@ export const CreatePastePage: React.FC = () => {
                       type="radio"
                       checked={isPublic}
                       onChange={() => setIsPublic(true)}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                      className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-300">Public</span>
                   </label>
@@ -216,7 +216,7 @@ export const CreatePastePage: React.FC = () => {
                       type="radio"
                       checked={!isPublic}
                       onChange={() => setIsPublic(false)}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                      className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-300">Private</span>
                   </label>
@@ -235,7 +235,7 @@ export const CreatePastePage: React.FC = () => {
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="react, hooks, javascript, utility"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
             />
           </div>
 
@@ -274,7 +274,7 @@ export const CreatePastePage: React.FC = () => {
               
               <button
                 type="button"
-                className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
               >
                 <Upload className="h-4 w-4" />
                 <span>Upload File</span>
@@ -287,12 +287,12 @@ export const CreatePastePage: React.FC = () => {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Paste your code here..."
-                  className="w-full h-96 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full h-96 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
                   required
                 />
               ) : (
                 <div className="h-96 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-4 overflow-auto">
-                  <pre className="text-sm text-slate-700 dark:text-slate-300 font-mono">
+                  <pre className="text-sm text-slate-700 dark:text-slate-300 font-mono whitespace-pre-wrap">
                     <code>{content || 'No content to preview'}</code>
                   </pre>
                 </div>
