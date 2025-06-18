@@ -11,21 +11,20 @@ VITE_API_URL=http://localhost:3001/api
 ```
 
 ### Production
-Create a `.env.production` file or set environment variables in your deployment platform:
+The production environment is configured to use:
 ```
-VITE_API_URL=https://your-render-backend-url.onrender.com/api
+VITE_API_URL=https://pb2-ahh9.onrender.com/api
 ```
 
 ## Deployment Instructions
 
 ### Backend (Render)
-1. Deploy the backend service first
-2. Note the backend URL (e.g., `https://your-app-name.onrender.com`)
+The backend is deployed at: `https://pb2-ahh9.onrender.com`
 
 ### Frontend (Render)
-1. Set the environment variable `VITE_API_URL` to your backend URL + `/api`
-2. Example: `VITE_API_URL=https://your-backend-app.onrender.com/api`
-3. Deploy the frontend service
+The frontend automatically uses the correct API URL based on the environment:
+- **Development**: Uses Vite proxy or localhost:3001
+- **Production**: Uses `https://pb2-ahh9.onrender.com/api`
 
 ### Local Development
 1. Start the backend: `npm run server`
@@ -37,6 +36,22 @@ VITE_API_URL=https://your-render-backend-url.onrender.com/api
 The application automatically detects the environment and uses the appropriate API base URL:
 
 - **Development**: Uses relative paths with Vite proxy or localhost:3001
-- **Production**: Uses the full backend URL from `VITE_API_URL` environment variable
+- **Production**: Uses the full backend URL `https://pb2-ahh9.onrender.com/api`
 
-Make sure to update the `.env.production` file or set the `VITE_API_URL` environment variable in your deployment platform to point to your actual backend URL.
+## Features
+
+- Modern pastebin with syntax highlighting
+- Project management and collaboration
+- AI-powered code analysis
+- Dark/Light theme toggle
+- User authentication and profiles
+- Admin dashboard
+- Real-time notifications
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Tailwind CSS, Vite
+- **Backend**: Node.js, Express, PostgreSQL
+- **Deployment**: Render
+- **State Management**: Zustand
+- **UI Components**: Lucide React, Framer Motion

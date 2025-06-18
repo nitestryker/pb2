@@ -5,7 +5,7 @@ const getApiBaseUrl = () => {
   // Check if we're in production
   if (import.meta.env.PROD) {
     // In production, use the full backend URL from environment variable
-    return import.meta.env.VITE_API_URL || 'https://your-render-backend-url.onrender.com/api';
+    return import.meta.env.VITE_API_URL || 'https://pb2-ahh9.onrender.com/api';
   } else {
     // In development, use relative path (works with Vite proxy) or localhost
     return import.meta.env.VITE_API_URL || '/api';
