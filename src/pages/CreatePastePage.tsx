@@ -51,10 +51,15 @@ export const CreatePastePage: React.FC = () => {
   const [encryptionReady, setEncryptionReady] = useState(false);
 
   // Auto-encrypt content when zero-knowledge is enabled
-  const performEncryption = useCallback(async (): Promise<boolean> => {
-    if (!isZeroKnowledge || !content.trim() || !isWebCryptoSupported()) {
-      return false;
-    }
+  const ENCRYPTED_PLACEHOLDER =
+    '// Encrypted — viewable only with decryption key';
+
+  const performEncryption = useCallback(
+    async (textToEncrypt?: string): Promise<boolean> => {
+      const rawText = textToEncrypt !== undefined ? textToEncrypt : content;
+      if (!isZeroKnowledge || !rawText.trim() || !isWebCryptoSupported()) {
+        return false;
+      }
 
     setIsEncrypting(true);
     try {
@@ -66,7 +71,7 @@ export const CreatePastePage: React.FC = () => {
       }
 
       // Encrypt content
-      const encrypted = await encryptContent(content.trim(), cryptoKey);
+      const encrypted = await encryptContent(rawText.trim(), cryptoKey);
       const encryptedData = JSON.stringify({
         data: encrypted.encryptedData,
         iv: encrypted.iv
@@ -89,24 +94,33 @@ export const CreatePastePage: React.FC = () => {
 
   // Trigger encryption on content change (with debounce)
   useEffect(() => {
-    if (!isZeroKnowledge || !content.trim()) {
+    if (!isZeroKnowledge) {
       setEncryptionReady(false);
       return;
     }
 
+    if (!content.trim() || content === ENCRYPTED_PLACEHOLDER) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
-      performEncryption();
+      performEncryption(content);
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [content, isZeroKnowledge, performEncryption]);
 
   // Handle content blur (immediate encryption)
-  const handleContentBlur = async () => {
-    if (isZeroKnowledge && content.trim()) {
-      const success = await performEncryption();
-      if (success) {
-        setContent('');
+  const handleContentBlur = async (
+    e: React.FocusEvent<HTMLTextAreaElement>
+  ) => {
+    if (isZeroKnowledge) {
+      const text = e.target.value;
+      if (text.trim()) {
+        const success = await performEncryption(text);
+        if (success) {
+          setContent(ENCRYPTED_PLACEHOLDER);
+        }
       }
     }
   };
@@ -299,7 +313,7 @@ export const CreatePastePage: React.FC = () => {
       
       // Trigger initial encryption if content exists
       if (content.trim()) {
-        performEncryption();
+        performEncryption(content);
       }
     } else {
       // Clear encryption state
