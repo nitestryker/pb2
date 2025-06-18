@@ -1,35 +1,48 @@
-// Get the API base URL from environment variables
-// In development: uses production backend by default (no local backend required)
-// In production: uses the full Render backend URL
+// Enhanced API service with robust error handling and fallbacks
 const getApiBaseUrl = () => {
-  // Check if we have an explicit API URL set
+  // Priority order for API URL determination:
+  // 1. Explicit VITE_API_URL from environment
+  // 2. Environment-based defaults
+  // 3. Hardcoded fallbacks
+  
   const envApiUrl = import.meta.env.VITE_API_URL;
   
   if (envApiUrl) {
-    console.log('Using API URL from environment:', envApiUrl);
+    console.log('🔧 Using API URL from environment:', envApiUrl);
     return envApiUrl;
   }
   
-  // Fallback logic based on environment
+  // Environment-based fallbacks
   if (import.meta.env.PROD) {
-    // In production, use the full backend URL
-    console.log('Production mode: using Render backend');
+    console.log('🚀 Production mode: using Render backend');
     return 'https://pb2-ahh9.onrender.com/api';
   } else {
-    // In development, check if we should use local backend
+    // Development mode logic
     if (import.meta.env.VITE_USE_LOCAL_BACKEND === 'true') {
-      console.log('Development mode: using local backend via proxy');
+      console.log('🔧 Development mode: using local backend via proxy');
       return '/api'; // Uses Vite proxy
     } else {
-      console.log('Development mode: using production backend');
+      console.log('🔧 Development mode: using production backend');
       return 'https://pb2-ahh9.onrender.com/api';
     }
   }
 };
 
 const API_BASE_URL = getApiBaseUrl();
+const API_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT || '30000');
+const ENABLE_FALLBACK = import.meta.env.VITE_ENABLE_API_FALLBACK === 'true';
+
+interface ApiError extends Error {
+  status?: number;
+  code?: string;
+  retryable?: boolean;
+}
 
 class ApiService {
+  private backendStatus: 'unknown' | 'healthy' | 'sleeping' | 'error' = 'unknown';
+  private lastHealthCheck = 0;
+  private healthCheckInterval = 5 * 60 * 1000; // 5 minutes
+
   private getAuthHeaders() {
     const token = localStorage.getItem('pasteforge-auth');
     if (token) {
@@ -50,19 +63,49 @@ class ApiService {
 
   private async handleResponse(response: Response) {
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
-      throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+      const error = await response.json().catch(() => ({ 
+        error: `HTTP ${response.status}: ${response.statusText}` 
+      }));
+      
+      const apiError: ApiError = new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+      apiError.status = response.status;
+      apiError.retryable = response.status >= 500 || response.status === 429;
+      
+      throw apiError;
     }
     return response.json();
   }
 
-  private async makeRequest(url: string, options: RequestInit = {}) {
+  private createTimeoutError(): ApiError {
+    const error: ApiError = new Error(
+      'Request timeout - the server may be sleeping or experiencing high load. Please try again in a moment.'
+    );
+    error.code = 'TIMEOUT';
+    error.retryable = true;
+    return error;
+  }
+
+  private createNetworkError(originalError: Error): ApiError {
+    const error: ApiError = new Error(
+      'Network error - unable to connect to server. The backend may be starting up, please wait a moment and try again.'
+    );
+    error.code = 'NETWORK_ERROR';
+    error.retryable = true;
+    return error;
+  }
+
+  private async makeRequest(url: string, options: RequestInit = {}, retryCount = 0): Promise<any> {
+    const maxRetries = 2;
+    
     try {
-      console.log(`Making request to: ${url}`);
+      console.log(`🌐 Making request to: ${url} (attempt ${retryCount + 1})`);
       
-      // Add timeout to requests
+      // Create abort controller for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn(`⏰ Request timeout after ${API_TIMEOUT}ms for: ${url}`);
+      }, API_TIMEOUT);
       
       const response = await fetch(url, {
         ...options,
@@ -74,31 +117,80 @@ class ApiService {
       });
       
       clearTimeout(timeoutId);
+      
+      // Update backend status on successful response
+      if (response.ok) {
+        this.backendStatus = 'healthy';
+        this.lastHealthCheck = Date.now();
+      }
+      
       return this.handleResponse(response);
+      
     } catch (error) {
-      console.error(`Request failed for ${url}:`, error);
+      console.error(`❌ Request failed for ${url}:`, error);
+      
+      let apiError: ApiError;
       
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error('Request timeout - server may be sleeping. Please try again in a moment.');
+          apiError = this.createTimeoutError();
+          this.backendStatus = 'sleeping';
+        } else if (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+          apiError = this.createNetworkError(error);
+          this.backendStatus = 'error';
+        } else {
+          apiError = error as ApiError;
         }
-        if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-          throw new Error('Network error - unable to connect to server. The backend may be starting up, please wait a moment and try again.');
-        }
+      } else {
+        apiError = new Error('Unknown error occurred');
+      }
+      
+      // Retry logic for retryable errors
+      if (apiError.retryable && retryCount < maxRetries && ENABLE_FALLBACK) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.log(`🔄 Retrying request in ${delay}ms...`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.makeRequest(url, options, retryCount + 1);
+      }
+      
+      throw apiError;
+    }
+  }
+
+  // Enhanced health check with status tracking
+  async healthCheck(): Promise<any> {
+    try {
+      console.log('🏥 Performing health check...');
+      const result = await this.makeRequest(`${API_BASE_URL}/health`);
+      
+      this.backendStatus = 'healthy';
+      this.lastHealthCheck = Date.now();
+      
+      console.log('✅ Health check successful:', result);
+      return result;
+      
+    } catch (error) {
+      console.warn('⚠️ Health check failed:', error);
+      
+      if (error instanceof Error && error.message.includes('timeout')) {
+        this.backendStatus = 'sleeping';
+      } else {
+        this.backendStatus = 'error';
       }
       
       throw error;
     }
   }
 
-  // Health check with fallback
-  async healthCheck() {
-    try {
-      return await this.makeRequest(`${API_BASE_URL}/health`);
-    } catch (error) {
-      console.warn('Health check failed, backend may be sleeping:', error);
-      throw error;
-    }
+  // Get current backend status
+  getBackendStatus(): { status: string; lastCheck: number; needsCheck: boolean } {
+    const needsCheck = Date.now() - this.lastHealthCheck > this.healthCheckInterval;
+    return {
+      status: this.backendStatus,
+      lastCheck: this.lastHealthCheck,
+      needsCheck
+    };
   }
 
   // Auth endpoints
@@ -120,9 +212,21 @@ class ApiService {
     return this.makeRequest(`${API_BASE_URL}/auth/verify`);
   }
 
-  // Paste endpoints
+  // Paste endpoints with enhanced error handling
   async getRecentPastes(limit = 20) {
-    return this.makeRequest(`${API_BASE_URL}/pastes/recent?limit=${limit}`);
+    try {
+      return await this.makeRequest(`${API_BASE_URL}/pastes/recent?limit=${limit}`);
+    } catch (error) {
+      console.error('Failed to fetch recent pastes:', error);
+      
+      // Return empty array as fallback for UI
+      if (ENABLE_FALLBACK) {
+        console.log('📋 Returning empty pastes array as fallback');
+        return [];
+      }
+      
+      throw error;
+    }
   }
 
   async getPasteArchive(page = 1, limit = 20) {
@@ -150,14 +254,29 @@ class ApiService {
   }
 
   async getRelatedPastes(id: string, limit = 6) {
-    return this.makeRequest(`${API_BASE_URL}/pastes/${id}/related?limit=${limit}`);
+    try {
+      return await this.makeRequest(`${API_BASE_URL}/pastes/${id}/related?limit=${limit}`);
+    } catch (error) {
+      console.error('Failed to fetch related pastes:', error);
+      
+      // Return empty array as fallback
+      if (ENABLE_FALLBACK) {
+        return [];
+      }
+      
+      throw error;
+    }
   }
 
   async downloadPaste(id: string) {
-    const response = await fetch(`${API_BASE_URL}/pastes/${id}/download`);
+    const response = await fetch(`${API_BASE_URL}/pastes/${id}/download`, {
+      headers: this.getAuthHeaders()
+    });
+    
     if (!response.ok) {
       throw new Error('Failed to download paste');
     }
+    
     return response.blob();
   }
 
@@ -186,14 +305,28 @@ class ApiService {
 
 export const apiService = new ApiService();
 
-// Log the API configuration for debugging
+// Enhanced startup configuration logging
 console.log('🔧 API Configuration:');
 console.log('  Base URL:', API_BASE_URL);
 console.log('  Environment:', import.meta.env.MODE);
 console.log('  Production mode:', import.meta.env.PROD);
 console.log('  Use local backend:', import.meta.env.VITE_USE_LOCAL_BACKEND === 'true');
+console.log('  API timeout:', API_TIMEOUT + 'ms');
+console.log('  Fallback enabled:', ENABLE_FALLBACK);
 
-// Test backend connectivity on startup
+// Startup health check with enhanced logging
 apiService.healthCheck()
-  .then(() => console.log('✅ Backend is reachable'))
-  .catch(() => console.warn('⚠️ Backend may be sleeping - will retry on first request'));
+  .then((result) => {
+    console.log('✅ Backend is healthy and reachable');
+    console.log('📊 Health check result:', result);
+  })
+  .catch((error) => {
+    console.warn('⚠️ Backend health check failed - this is normal if the server is sleeping');
+    console.log('🔄 The backend will be automatically retried on first request');
+    
+    if (error.message.includes('timeout')) {
+      console.log('💤 Server appears to be sleeping - it will wake up on first request');
+    } else if (error.message.includes('Network error')) {
+      console.log('🌐 Network connectivity issue detected');
+    }
+  });

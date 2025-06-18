@@ -5,6 +5,7 @@ import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAppStore } from './store/appStore';
 import { Layout } from './components/Layout/Layout';
+import { ApiStatusBanner } from './components/Common/ApiStatusBanner';
 import { HomePage } from './pages/HomePage';
 import { PastePage } from './pages/PastePage';
 import { CreatePastePage } from './pages/CreatePastePage';
@@ -23,7 +24,7 @@ import { AdminRoute } from './components/Auth/AdminRoute';
 function App() {
   const { theme } = useThemeStore();
   const { verifyToken } = useAuthStore();
-  const { loadRecentPastes } = useAppStore();
+  const { loadRecentPastes, checkBackendStatus } = useAppStore();
 
   useEffect(() => {
     // Apply theme to document
@@ -32,20 +33,44 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    // Initialize app
+    // Initialize app with enhanced error handling
     const initializeApp = async () => {
-      await verifyToken();
-      await loadRecentPastes();
+      console.log('🚀 Initializing PasteForge application...');
+      
+      try {
+        // Check backend status first
+        console.log('🏥 Checking backend status...');
+        await checkBackendStatus();
+        
+        // Verify authentication token
+        console.log('🔐 Verifying authentication...');
+        await verifyToken();
+        
+        // Load recent pastes
+        console.log('📋 Loading recent pastes...');
+        await loadRecentPastes();
+        
+        console.log('✅ Application initialized successfully');
+        
+      } catch (error) {
+        console.warn('⚠️ Application initialization completed with warnings:', error);
+        // Don't throw - let individual components handle their errors
+      }
     };
     
     initializeApp();
-  }, [verifyToken, loadRecentPastes]);
+  }, [verifyToken, loadRecentPastes, checkBackendStatus]);
 
   return (
     <div className={theme}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 transition-colors duration-300">
         <Router>
           <Layout>
+            {/* API Status Banner */}
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <ApiStatusBanner />
+            </div>
+            
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/paste/:id" element={<PastePage />} />

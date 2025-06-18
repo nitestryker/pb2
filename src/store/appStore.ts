@@ -9,6 +9,8 @@ interface AppState {
   notifications: Notification[];
   messages: Message[];
   isLoading: boolean;
+  apiError: string | null;
+  backendStatus: 'unknown' | 'healthy' | 'sleeping' | 'error';
   
   // Pastes
   loadRecentPastes: () => Promise<void>;
@@ -29,6 +31,10 @@ interface AppState {
   // Notifications
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  
+  // Error handling
+  clearApiError: () => void;
+  checkBackendStatus: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -38,28 +44,55 @@ export const useAppStore = create<AppState>((set, get) => ({
   notifications: [],
   messages: [],
   isLoading: false,
+  apiError: null,
+  backendStatus: 'unknown',
 
   loadRecentPastes: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, apiError: null });
+    
     try {
+      console.log('📋 Loading recent pastes...');
       const pastes = await apiService.getRecentPastes();
-      set({ pastes, isLoading: false });
-    } catch (error) {
-      console.error('Failed to load recent pastes:', error);
       
-      // Show user-friendly error message
+      set({ 
+        pastes: Array.isArray(pastes) ? pastes : [], 
+        isLoading: false,
+        backendStatus: 'healthy'
+      });
+      
+      console.log(`✅ Loaded ${pastes.length} recent pastes`);
+      
+    } catch (error) {
+      console.error('❌ Failed to load recent pastes:', error);
+      
+      let errorMessage = 'Failed to load recent pastes';
+      let backendStatus: 'sleeping' | 'error' = 'error';
+      
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('sleeping')) {
-          console.warn('Backend may be sleeping, will retry later');
+          errorMessage = 'Server is starting up. Please wait a moment and try again.';
+          backendStatus = 'sleeping';
+          console.log('💤 Backend appears to be sleeping');
+        } else if (error.message.includes('Network error')) {
+          errorMessage = 'Connection failed. Please check your internet connection.';
+          console.log('🌐 Network connectivity issue');
+        } else {
+          errorMessage = error.message;
         }
       }
       
-      set({ isLoading: false });
+      set({ 
+        isLoading: false, 
+        apiError: errorMessage,
+        backendStatus
+      });
     }
   },
 
   addPaste: async (pasteData) => {
     try {
+      console.log('📝 Creating new paste...');
+      
       const response = await apiService.createPaste({
         title: pasteData.title,
         content: pasteData.content,
@@ -71,15 +104,36 @@ export const useAppStore = create<AppState>((set, get) => ({
         expiration: pasteData.expiresAt
       });
       
+      console.log('✅ Paste created successfully:', response.id);
+      
       // Reload recent pastes to include the new one (only if not zero-knowledge)
       if (!pasteData.isZeroKnowledge) {
+        console.log('🔄 Refreshing recent pastes...');
         get().loadRecentPastes();
       }
       
+      set({ backendStatus: 'healthy', apiError: null });
       return response.id;
+      
     } catch (error) {
-      console.error('Failed to create paste:', error);
-      throw error; // Re-throw to let the component handle the error
+      console.error('❌ Failed to create paste:', error);
+      
+      let errorMessage = 'Failed to create paste';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('sleeping')) {
+          errorMessage = 'Server is starting up. Please wait a moment and try again.';
+          set({ backendStatus: 'sleeping' });
+        } else if (error.message.includes('Network error')) {
+          errorMessage = 'Connection failed. Please check your internet and try again.';
+          set({ backendStatus: 'error' });
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      set({ apiError: errorMessage });
+      throw new Error(errorMessage);
     }
   },
 
@@ -173,5 +227,24 @@ export const useAppStore = create<AppState>((set, get) => ({
         read: true,
       })),
     }));
+  },
+
+  clearApiError: () => {
+    set({ apiError: null });
+  },
+
+  checkBackendStatus: async () => {
+    try {
+      await apiService.healthCheck();
+      set({ backendStatus: 'healthy', apiError: null });
+    } catch (error) {
+      console.warn('Backend status check failed:', error);
+      
+      if (error instanceof Error && error.message.includes('timeout')) {
+        set({ backendStatus: 'sleeping' });
+      } else {
+        set({ backendStatus: 'error' });
+      }
+    }
   },
 }));
