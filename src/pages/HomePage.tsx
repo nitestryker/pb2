@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -12,31 +12,17 @@ import {
   TrendingUp,
   ArrowRight,
   GitBranch,
-  MessageSquare,
-  RefreshCw,
-  AlertCircle
+  MessageSquare
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { PasteCard } from '../components/Paste/PasteCard';
 
 export const HomePage: React.FC = () => {
-  const { pastes, isLoading, apiError, backendStatus, loadRecentPastes } = useAppStore();
+  const { pastes } = useAppStore();
   const { isAuthenticated } = useAuthStore();
-  const [isRetrying, setIsRetrying] = useState(false);
   
   const recentPastes = pastes.slice(0, 6);
-
-  const handleRetryLoadPastes = async () => {
-    setIsRetrying(true);
-    try {
-      await loadRecentPastes();
-    } catch (error) {
-      console.log('Retry failed, but error is handled in store');
-    } finally {
-      setIsRetrying(false);
-    }
-  };
 
   const features = [
     {
@@ -77,89 +63,6 @@ export const HomePage: React.FC = () => {
     { label: 'Projects', value: '5,000+' },
     { label: 'Languages', value: '200+' }
   ];
-
-  const renderRecentPastesSection = () => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
-            <p className="text-slate-600 dark:text-slate-400">Loading recent pastes...</p>
-            {backendStatus === 'sleeping' && (
-              <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">
-                Server is waking up, this may take a moment...
-              </p>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (apiError && recentPastes.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <div className="text-slate-400 dark:text-slate-500 mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-            Unable to Load Recent Pastes
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-            {backendStatus === 'sleeping' 
-              ? 'The server is starting up. Please wait a moment and try again.'
-              : 'There was an issue loading recent pastes. Please check your connection and try again.'
-            }
-          </p>
-          <button
-            onClick={handleRetryLoadPastes}
-            disabled={isRetrying}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
-            <span>{isRetrying ? 'Retrying...' : 'Try Again'}</span>
-          </button>
-        </div>
-      );
-    }
-
-    if (recentPastes.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <div className="text-slate-400 dark:text-slate-500 mb-4">
-            <Code2 className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-            No Recent Pastes
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Be the first to share a code snippet with the community!
-          </p>
-          <Link
-            to="/create"
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-          >
-            <Code2 className="h-4 w-4" />
-            <span>Create First Paste</span>
-          </Link>
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {recentPastes.map((paste, index) => (
-          <motion.div
-            key={paste.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
-          >
-            <PasteCard paste={paste} />
-          </motion.div>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-16">
@@ -300,7 +203,18 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
           
-          {renderRecentPastesSection()}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {recentPastes.map((paste, index) => (
+              <motion.div
+                key={paste.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <PasteCard paste={paste} />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
