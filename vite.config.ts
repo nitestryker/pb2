@@ -15,4 +15,6 @@ export default defineConfig({
       },
     },
   },
+  // Ensure environment variables are properly loaded
+  envPrefix: 'VITE_',
 });

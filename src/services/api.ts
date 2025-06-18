@@ -1,4 +1,18 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Get the API base URL from environment variables
+// In development: uses proxy or localhost:3001
+// In production: uses the full Render backend URL
+const getApiBaseUrl = () => {
+  // Check if we're in production
+  if (import.meta.env.PROD) {
+    // In production, use the full backend URL from environment variable
+    return import.meta.env.VITE_API_URL || 'https://your-render-backend-url.onrender.com/api';
+  } else {
+    // In development, use relative path (works with Vite proxy) or localhost
+    return import.meta.env.VITE_API_URL || '/api';
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiService {
   private getAuthHeaders() {
@@ -141,3 +155,8 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+
+// Log the API base URL for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE_URL);
+}
