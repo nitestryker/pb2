@@ -51,9 +51,9 @@ export const CreatePastePage: React.FC = () => {
   const [encryptionReady, setEncryptionReady] = useState(false);
 
   // Auto-encrypt content when zero-knowledge is enabled
-  const performEncryption = useCallback(async () => {
+  const performEncryption = useCallback(async (): Promise<boolean> => {
     if (!isZeroKnowledge || !content.trim() || !isWebCryptoSupported()) {
-      return;
+      return false;
     }
 
     setIsEncrypting(true);
@@ -74,12 +74,14 @@ export const CreatePastePage: React.FC = () => {
       
       setEncryptedContent(encryptedData);
       setEncryptionReady(true);
-      
+
       console.log('Content encrypted successfully');
+      return true;
     } catch (error) {
       console.error('Encryption failed:', error);
       toast.error('Encryption failed. Please try again.');
       setEncryptionReady(false);
+      return false;
     } finally {
       setIsEncrypting(false);
     }
@@ -100,16 +102,19 @@ export const CreatePastePage: React.FC = () => {
   }, [content, isZeroKnowledge, performEncryption]);
 
   // Handle content blur (immediate encryption)
-  const handleContentBlur = () => {
+  const handleContentBlur = async () => {
     if (isZeroKnowledge && content.trim()) {
-      performEncryption();
+      const success = await performEncryption();
+      if (success) {
+        setContent('');
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim()) {
+    if (!isZeroKnowledge && !content.trim()) {
       toast.error('Content is required');
       return;
     }
@@ -127,9 +132,11 @@ export const CreatePastePage: React.FC = () => {
     }
 
     // For zero-knowledge pastes, ensure encryption is ready
-    if (isZeroKnowledge && (!encryptionReady || !encryptedContent || !encryptionKey)) {
-      toast.error('Please wait for encryption to complete');
-      return;
+    if (isZeroKnowledge) {
+      if (!encryptionReady || !encryptedContent) {
+        toast.error('Please wait for encryption to complete');
+        return;
+      }
     }
 
     setIsSubmitting(true);

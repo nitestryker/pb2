@@ -285,7 +285,7 @@ export const PastePage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-2">
-                  🔑 This is your unique access link — save it!
+                  🔑 This is your secure link. Save it — without the key, this paste cannot be read.
                 </h3>
                 <p className="text-sm text-green-800 dark:text-green-400 mb-4">
                   This zero-knowledge paste can only be accessed with the complete URL including the encryption key. 
