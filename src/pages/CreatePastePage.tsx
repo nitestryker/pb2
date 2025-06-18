@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, Eye, Settings, Upload, Wand2, Info } from 'lucide-react';
+import { Save, Eye, Settings, Upload, Wand2, Info, Globe, Link2, Lock } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -133,6 +133,43 @@ export const CreatePastePage: React.FC = () => {
     }, 1500);
   };
 
+  // Visibility options configuration
+  const visibilityOptions = [
+    {
+      id: 'public',
+      icon: Globe,
+      title: 'Public',
+      description: 'Visible in archive and search results',
+      available: true,
+      color: 'from-green-500 to-emerald-600',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
+      borderColor: 'border-green-200 dark:border-green-800',
+      textColor: 'text-green-700 dark:text-green-300'
+    },
+    {
+      id: 'unlisted',
+      icon: Link2,
+      title: 'Unlisted',
+      description: 'Only accessible via direct link',
+      available: true,
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      borderColor: 'border-blue-200 dark:border-blue-800',
+      textColor: 'text-blue-700 dark:text-blue-300'
+    },
+    {
+      id: 'private',
+      icon: Lock,
+      title: 'Private',
+      description: isAuthenticated ? 'Only you can see this paste' : 'Requires account',
+      available: isAuthenticated,
+      color: 'from-purple-500 to-violet-600',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+      borderColor: 'border-purple-200 dark:border-purple-800',
+      textColor: 'text-purple-700 dark:text-purple-300'
+    }
+  ];
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
       <motion.div
@@ -203,7 +240,7 @@ export const CreatePastePage: React.FC = () => {
 
           {/* Settings Row */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Language
@@ -237,68 +274,95 @@ export const CreatePastePage: React.FC = () => {
                   ))}
                 </select>
               </div>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Visibility
-                </label>
-                <div className="space-y-2 pt-1">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={visibility === 'public'}
-                      onChange={() => setVisibility('public')}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Public</span>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Visible in archive</p>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={visibility === 'unlisted'}
-                      onChange={() => setVisibility('unlisted')}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Unlisted</span>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Only accessible via link</p>
-                    </div>
-                  </label>
-                  
-                  {isAuthenticated && (
-                    <label className="flex items-center">
+          {/* Visibility Options - Redesigned */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">
+              Visibility
+            </label>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {visibilityOptions.map((option) => {
+                const Icon = option.icon;
+                const isSelected = visibility === option.id;
+                const isDisabled = !option.available;
+                
+                return (
+                  <motion.div
+                    key={option.id}
+                    whileHover={option.available ? { scale: 1.02 } : {}}
+                    whileTap={option.available ? { scale: 0.98 } : {}}
+                    className={`relative cursor-pointer transition-all duration-200 ${
+                      isDisabled ? 'opacity-60 cursor-not-allowed' : ''
+                    }`}
+                    onClick={() => option.available && setVisibility(option.id as any)}
+                  >
+                    <div className={`
+                      relative p-4 rounded-xl border-2 transition-all duration-200
+                      ${isSelected 
+                        ? `${option.borderColor} ${option.bgColor} shadow-lg` 
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
+                      }
+                      ${isDisabled ? 'border-slate-200 dark:border-slate-700' : ''}
+                    `}>
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-2 right-2 w-5 h-5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center"
+                        >
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </motion.div>
+                      )}
+                      
+                      {/* Icon */}
+                      <div className={`
+                        w-12 h-12 rounded-lg flex items-center justify-center mb-3 transition-all duration-200
+                        ${isSelected 
+                          ? `bg-gradient-to-r ${option.color} shadow-lg` 
+                          : 'bg-slate-200 dark:bg-slate-700'
+                        }
+                      `}>
+                        <Icon className={`h-6 w-6 ${
+                          isSelected ? 'text-white' : 'text-slate-600 dark:text-slate-400'
+                        }`} />
+                      </div>
+                      
+                      {/* Content */}
+                      <div>
+                        <h3 className={`font-semibold mb-1 transition-colors duration-200 ${
+                          isSelected 
+                            ? option.textColor 
+                            : 'text-slate-900 dark:text-slate-100'
+                        }`}>
+                          {option.title}
+                        </h3>
+                        <p className={`text-sm transition-colors duration-200 ${
+                          isSelected 
+                            ? option.textColor.replace('700', '600').replace('300', '400')
+                            : 'text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {option.description}
+                        </p>
+                      </div>
+                      
+                      {/* Radio button (hidden but accessible) */}
                       <input
                         type="radio"
-                        checked={visibility === 'private'}
-                        onChange={() => setVisibility('private')}
-                        className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                        name="visibility"
+                        value={option.id}
+                        checked={isSelected}
+                        onChange={() => option.available && setVisibility(option.id as any)}
+                        disabled={!option.available}
+                        className="sr-only"
                       />
-                      <div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Private</span>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Only you can see</p>
-                      </div>
-                    </label>
-                  )}
-                  
-                  {!isAuthenticated && (
-                    <div className="flex items-center opacity-50">
-                      <input
-                        type="radio"
-                        disabled
-                        className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Private</span>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Requires account</p>
-                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
