@@ -1,21 +1,29 @@
 // Get the API base URL from environment variables
-// In development: uses proxy or localhost:3001
+// In development: uses production backend by default (no local backend required)
 // In production: uses the full Render backend URL
 const getApiBaseUrl = () => {
   // Check if we have an explicit API URL set
   const envApiUrl = import.meta.env.VITE_API_URL;
   
   if (envApiUrl) {
+    console.log('Using API URL from environment:', envApiUrl);
     return envApiUrl;
   }
   
   // Fallback logic based on environment
   if (import.meta.env.PROD) {
     // In production, use the full backend URL
+    console.log('Production mode: using Render backend');
     return 'https://pb2-ahh9.onrender.com/api';
   } else {
-    // In development, use relative path (works with Vite proxy) or localhost
-    return '/api';
+    // In development, check if we should use local backend
+    if (import.meta.env.VITE_USE_LOCAL_BACKEND === 'true') {
+      console.log('Development mode: using local backend via proxy');
+      return '/api'; // Uses Vite proxy
+    } else {
+      console.log('Development mode: using production backend');
+      return 'https://pb2-ahh9.onrender.com/api';
+    }
   }
 };
 
@@ -62,7 +70,7 @@ class ApiService {
     } catch (error) {
       console.error(`Request failed for ${url}:`, error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error - unable to connect to server');
+        throw new Error('Network error - unable to connect to server. Please check your internet connection.');
       }
       throw error;
     }
@@ -158,7 +166,9 @@ class ApiService {
 
 export const apiService = new ApiService();
 
-// Log the API base URL for debugging
-console.log('API Base URL:', API_BASE_URL);
-console.log('Environment:', import.meta.env.MODE);
-console.log('Production mode:', import.meta.env.PROD);
+// Log the API configuration for debugging
+console.log('🔧 API Configuration:');
+console.log('  Base URL:', API_BASE_URL);
+console.log('  Environment:', import.meta.env.MODE);
+console.log('  Production mode:', import.meta.env.PROD);
+console.log('  Use local backend:', import.meta.env.VITE_USE_LOCAL_BACKEND === 'true');
