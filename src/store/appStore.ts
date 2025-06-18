@@ -56,7 +56,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         title: pasteData.title,
         content: pasteData.content,
         language: pasteData.language,
-        isPrivate: !pasteData.isPublic,
+        isPrivate: !pasteData.isPublic && !pasteData.isUnlisted,
         tags: pasteData.tags,
         expiration: pasteData.expiresAt
       });
@@ -67,7 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       return response.id;
     } catch (error) {
       console.error('Failed to create paste:', error);
-      return null;
+      throw error; // Re-throw to let the component handle the error
     }
   },
 

@@ -18,8 +18,8 @@ router.get('/recent', async (req, res) => {
         p.view_count,
         p.created_at,
         p.updated_at,
-        u.id as author_id,
-        u.username as author_username,
+        COALESCE(u.id, 0) as author_id,
+        COALESCE(u.username, 'Anonymous') as author_username,
         u.avatar_url as author_avatar,
         COALESCE(
           JSON_AGG(
@@ -30,7 +30,7 @@ router.get('/recent', async (req, res) => {
           '[]'
         ) as tags
       FROM pastes p
-      JOIN users u ON p.author_id = u.id
+      LEFT JOIN users u ON p.author_id = u.id
       LEFT JOIN paste_tags pt ON p.id = pt.paste_id
       WHERE p.is_private = FALSE 
         AND p.is_zero_knowledge = FALSE 
@@ -46,7 +46,7 @@ router.get('/recent', async (req, res) => {
       content: row.content,
       language: row.syntax_language,
       author: {
-        id: row.author_id.toString(),
+        id: row.author_id ? row.author_id.toString() : 'anonymous',
         username: row.author_username,
         avatar: row.author_avatar
       },
@@ -97,8 +97,8 @@ router.get('/archive', async (req, res) => {
         p.view_count,
         p.created_at,
         p.updated_at,
-        u.id as author_id,
-        u.username as author_username,
+        COALESCE(u.id, 0) as author_id,
+        COALESCE(u.username, 'Anonymous') as author_username,
         u.avatar_url as author_avatar,
         COALESCE(
           JSON_AGG(
@@ -109,7 +109,7 @@ router.get('/archive', async (req, res) => {
           '[]'
         ) as tags
       FROM pastes p
-      JOIN users u ON p.author_id = u.id
+      LEFT JOIN users u ON p.author_id = u.id
       LEFT JOIN paste_tags pt ON p.id = pt.paste_id
       WHERE p.is_private = FALSE 
         AND p.is_zero_knowledge = FALSE 
@@ -125,7 +125,7 @@ router.get('/archive', async (req, res) => {
       content: row.content,
       language: row.syntax_language,
       author: {
-        id: row.author_id.toString(),
+        id: row.author_id ? row.author_id.toString() : 'anonymous',
         username: row.author_username,
         avatar: row.author_avatar
       },
@@ -169,8 +169,8 @@ router.get('/:id', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         p.*,
-        u.id as author_id,
-        u.username as author_username,
+        COALESCE(u.id, 0) as author_id,
+        COALESCE(u.username, 'Anonymous') as author_username,
         u.avatar_url as author_avatar,
         u.bio as author_bio,
         COALESCE(
@@ -182,7 +182,7 @@ router.get('/:id', async (req, res) => {
           '[]'
         ) as tags
       FROM pastes p
-      JOIN users u ON p.author_id = u.id
+      LEFT JOIN users u ON p.author_id = u.id
       LEFT JOIN paste_tags pt ON p.id = pt.paste_id
       WHERE p.id = $1
       GROUP BY p.id, u.id, u.username, u.avatar_url, u.bio
@@ -218,7 +218,7 @@ router.get('/:id', async (req, res) => {
       encryptedContent: row.is_zero_knowledge ? row.encrypted_content : null,
       language: row.syntax_language,
       author: {
-        id: row.author_id.toString(),
+        id: row.author_id ? row.author_id.toString() : 'anonymous',
         username: row.author_username,
         avatar: row.author_avatar,
         bio: row.author_bio
@@ -243,8 +243,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new paste
-router.post('/', authenticateToken, async (req, res) => {
+// Create new paste - Modified to allow anonymous creation
+router.post('/', async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -267,6 +267,37 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Encrypted content required for zero-knowledge pastes' });
     }
     
+    // Check if user is authenticated
+    const authHeader = req.headers.authorization;
+    let userId = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        // Try to authenticate the user
+        const jwt = await import('jsonwebtoken');
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Verify user exists
+        const userResult = await client.query(
+          'SELECT id FROM users WHERE id = $1',
+          [decoded.id]
+        );
+        
+        if (userResult.rows.length > 0) {
+          userId = decoded.id;
+        }
+      } catch (error) {
+        // Invalid token, but we'll allow anonymous creation
+        console.log('Invalid token, creating anonymous paste');
+      }
+    }
+    
+    // Anonymous users cannot create private pastes
+    if (!userId && isPrivate) {
+      return res.status(400).json({ error: 'Anonymous users cannot create private pastes' });
+    }
+    
     await client.query('BEGIN');
     
     // Insert paste
@@ -287,7 +318,7 @@ router.post('/', authenticateToken, async (req, res) => {
       title,
       isZeroKnowledge ? null : content,
       language,
-      req.user.id,
+      userId, // Will be null for anonymous users
       isPrivate,
       isZeroKnowledge,
       isZeroKnowledge ? encryptedContent : null,
@@ -320,7 +351,8 @@ router.post('/', authenticateToken, async (req, res) => {
       isPrivate: paste.is_private,
       isZeroKnowledge: paste.is_zero_knowledge,
       createdAt: paste.created_at.toISOString(),
-      tags
+      tags,
+      author: userId ? 'authenticated' : 'anonymous'
     });
     
   } catch (error) {
@@ -410,26 +442,29 @@ router.get('/:id/related', async (req, res) => {
         p.syntax_language,
         p.view_count,
         p.created_at,
-        u.id as author_id,
-        u.username as author_username,
+        COALESCE(u.id, 0) as author_id,
+        COALESCE(u.username, 'Anonymous') as author_username,
         u.avatar_url as author_avatar,
         CASE 
-          WHEN p.author_id = $2 THEN 'user'
+          WHEN p.author_id = $2 AND p.author_id IS NOT NULL THEN 'user'
           WHEN p.syntax_language = $3 THEN 'language'
           ELSE 'other'
         END as relation_type,
         CASE 
-          WHEN p.author_id = $2 THEN 0.9
+          WHEN p.author_id = $2 AND p.author_id IS NOT NULL THEN 0.9
           WHEN p.syntax_language = $3 THEN 0.7
           ELSE 0.5
         END as relevance_score
       FROM pastes p
-      JOIN users u ON p.author_id = u.id
+      LEFT JOIN users u ON p.author_id = u.id
       WHERE p.id != $1
         AND p.is_private = FALSE 
         AND p.is_zero_knowledge = FALSE 
         AND (p.expiration IS NULL OR p.expiration > NOW())
-        AND (p.author_id = $2 OR p.syntax_language = $3)
+        AND (
+          (p.author_id = $2 AND p.author_id IS NOT NULL) OR 
+          p.syntax_language = $3
+        )
       ORDER BY relevance_score DESC, p.created_at DESC
       LIMIT $4
     `, [pasteId, author_id, syntax_language, limit]);
@@ -441,7 +476,7 @@ router.get('/:id/related', async (req, res) => {
         content: row.content.substring(0, 200) + '...', // Truncate for preview
         language: row.syntax_language,
         author: {
-          id: row.author_id.toString(),
+          id: row.author_id ? row.author_id.toString() : 'anonymous',
           username: row.author_username,
           avatar: row.author_avatar
         },

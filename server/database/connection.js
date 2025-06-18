@@ -52,14 +52,14 @@ export async function initializeDatabase() {
       )
     `);
     
-    // Create pastes table
+    // Create pastes table - Modified to allow NULL author_id for anonymous pastes
     await client.query(`
       CREATE TABLE IF NOT EXISTS pastes (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
         syntax_language VARCHAR(50) NOT NULL DEFAULT 'text',
-        author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         is_private BOOLEAN DEFAULT FALSE,
         is_zero_knowledge BOOLEAN DEFAULT FALSE,
         encrypted_content TEXT,

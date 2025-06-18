@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, Eye, Settings, Upload, Wand2 } from 'lucide-react';
+import { Save, Eye, Settings, Upload, Wand2, Info } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -29,7 +29,7 @@ export const CreatePastePage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const [isPublic, setIsPublic] = useState(true);
+  const [visibility, setVisibility] = useState<'public' | 'unlisted' | 'private'>('public');
   const [expiration, setExpiration] = useState('');
   const [tags, setTags] = useState('');
   const [isPreview, setIsPreview] = useState(false);
@@ -43,8 +43,9 @@ export const CreatePastePage: React.FC = () => {
       return;
     }
 
-    if (!isAuthenticated || !user) {
-      toast.error('You must be logged in to create a paste');
+    // For anonymous users, prevent private pastes
+    if (!isAuthenticated && visibility === 'private') {
+      toast.error('Anonymous users cannot create private pastes');
       return;
     }
 
@@ -52,8 +53,23 @@ export const CreatePastePage: React.FC = () => {
       title: title.trim() || 'Untitled',
       content: content.trim(),
       language,
-      author: user,
-      isPublic,
+      author: isAuthenticated && user ? user : {
+        id: 'anonymous',
+        username: 'Anonymous',
+        email: '',
+        avatar: undefined,
+        bio: undefined,
+        website: undefined,
+        location: undefined,
+        joinDate: new Date().toISOString(),
+        isAdmin: false,
+        followers: 0,
+        following: 0,
+        pasteCount: 0,
+        projectCount: 0
+      },
+      isPublic: visibility === 'public',
+      isUnlisted: visibility === 'unlisted',
       expiresAt: expiration ? calculateExpirationDate(expiration) : undefined,
       tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
     };
@@ -130,9 +146,34 @@ export const CreatePastePage: React.FC = () => {
             Create New Paste
           </h1>
           <p className="text-slate-600 dark:text-slate-300">
-            Share your code with the world or keep it private for your projects
+            {isAuthenticated 
+              ? 'Share your code with the world or keep it private for your projects'
+              : 'Share your code with the world - no account required!'
+            }
           </p>
         </div>
+
+        {/* Anonymous User Info */}
+        {!isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+          >
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium text-blue-900 dark:text-blue-300 mb-1">
+                  Creating as Anonymous User
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-400">
+                  Your paste will be attributed to "Anonymous". You can make it public (visible in archive) or unlisted (only accessible via link). 
+                  <span className="font-medium"> Private pastes require an account.</span>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title and AI Generation */}
@@ -201,25 +242,61 @@ export const CreatePastePage: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Visibility
                 </label>
-                <div className="flex space-x-4 pt-3">
+                <div className="space-y-2 pt-1">
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      checked={isPublic}
-                      onChange={() => setIsPublic(true)}
+                      checked={visibility === 'public'}
+                      onChange={() => setVisibility('public')}
                       className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Public</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Public</span>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Visible in archive</p>
+                    </div>
                   </label>
+                  
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      checked={!isPublic}
-                      onChange={() => setIsPublic(false)}
+                      checked={visibility === 'unlisted'}
+                      onChange={() => setVisibility('unlisted')}
                       className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Private</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Unlisted</span>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Only accessible via link</p>
+                    </div>
                   </label>
+                  
+                  {isAuthenticated && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        checked={visibility === 'private'}
+                        onChange={() => setVisibility('private')}
+                        className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Private</span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Only you can see</p>
+                      </div>
+                    </label>
+                  )}
+                  
+                  {!isAuthenticated && (
+                    <div className="flex items-center opacity-50">
+                      <input
+                        type="radio"
+                        disabled
+                        className="mr-2 text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Private</span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Requires account</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -24,6 +24,7 @@ export interface Paste {
   updatedAt: string;
   expiresAt?: string;
   isPublic: boolean;
+  isUnlisted?: boolean; // New field for unlisted pastes
   views: number;
   forks: number;
   stars: number;
