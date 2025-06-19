@@ -51,10 +51,15 @@ export const CreatePastePage: React.FC = () => {
   const [encryptionReady, setEncryptionReady] = useState(false);
 
   // Auto-encrypt content when zero-knowledge is enabled
-  const performEncryption = useCallback(async () => {
-    if (!isZeroKnowledge || !content.trim() || !isWebCryptoSupported()) {
-      return;
-    }
+  const ENCRYPTED_PLACEHOLDER =
+    '// Encrypted — viewable only with decryption key';
+
+  const performEncryption = useCallback(
+    async (textToEncrypt?: string): Promise<boolean> => {
+      const rawText = textToEncrypt !== undefined ? textToEncrypt : content;
+      if (!isZeroKnowledge || !rawText.trim() || !isWebCryptoSupported()) {
+        return false;
+      }
 
     setIsEncrypting(true);
     try {
@@ -66,7 +71,7 @@ export const CreatePastePage: React.FC = () => {
       }
 
       // Encrypt content
-      const encrypted = await encryptContent(content.trim(), cryptoKey);
+      const encrypted = await encryptContent(rawText.trim(), cryptoKey);
       const encryptedData = JSON.stringify({
         data: encrypted.encryptedData,
         iv: encrypted.iv
@@ -74,12 +79,14 @@ export const CreatePastePage: React.FC = () => {
       
       setEncryptedContent(encryptedData);
       setEncryptionReady(true);
-      
+
       console.log('Content encrypted successfully');
+      return true;
     } catch (error) {
       console.error('Encryption failed:', error);
       toast.error('Encryption failed. Please try again.');
       setEncryptionReady(false);
+      return false;
     } finally {
       setIsEncrypting(false);
     }
@@ -87,29 +94,41 @@ export const CreatePastePage: React.FC = () => {
 
   // Trigger encryption on content change (with debounce)
   useEffect(() => {
-    if (!isZeroKnowledge || !content.trim()) {
+    if (!isZeroKnowledge) {
       setEncryptionReady(false);
       return;
     }
 
+    if (!content.trim() || content === ENCRYPTED_PLACEHOLDER) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
-      performEncryption();
+      performEncryption(content);
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [content, isZeroKnowledge, performEncryption]);
 
   // Handle content blur (immediate encryption)
-  const handleContentBlur = () => {
-    if (isZeroKnowledge && content.trim()) {
-      performEncryption();
+  const handleContentBlur = async (
+    e: React.FocusEvent<HTMLTextAreaElement>
+  ) => {
+    if (isZeroKnowledge) {
+      const text = e.target.value;
+      if (text.trim()) {
+        const success = await performEncryption(text);
+        if (success) {
+          setContent(ENCRYPTED_PLACEHOLDER);
+        }
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim()) {
+    if (!isZeroKnowledge && !content.trim()) {
       toast.error('Content is required');
       return;
     }
@@ -127,9 +146,11 @@ export const CreatePastePage: React.FC = () => {
     }
 
     // For zero-knowledge pastes, ensure encryption is ready
-    if (isZeroKnowledge && (!encryptionReady || !encryptedContent || !encryptionKey)) {
-      toast.error('Please wait for encryption to complete');
-      return;
+    if (isZeroKnowledge) {
+      if (!encryptionReady || !encryptedContent) {
+        toast.error('Please wait for encryption to complete');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -292,7 +313,7 @@ export const CreatePastePage: React.FC = () => {
       
       // Trigger initial encryption if content exists
       if (content.trim()) {
-        performEncryption();
+        performEncryption(content);
       }
     } else {
       // Clear encryption state
