@@ -108,6 +108,7 @@ class ApiService {
       }, API_TIMEOUT);
       
       const response = await fetch(url, {
+        credentials: 'include',
         ...options,
         signal: controller.signal,
         headers: {

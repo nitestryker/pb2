@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye, Star, GitFork, Code } from 'lucide-react';
+import { Eye, Star, GitFork, Code, Lock } from 'lucide-react';
 import { Paste } from '../../types';
 
 interface PasteCardProps {
@@ -51,9 +51,16 @@ export const PasteCard: React.FC<PasteCardProps> = ({ paste }) => {
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 mb-4 relative overflow-hidden">
-          <pre className="text-sm text-slate-700 dark:text-slate-300 line-clamp-4 overflow-hidden">
-            <code>{paste.content}</code>
-          </pre>
+          {paste.content === null ? (
+            <div className="flex items-center text-slate-500 dark:text-slate-400 space-x-2">
+              <Lock className="h-4 w-4" />
+              <span>🔒 This paste is password protected.</span>
+            </div>
+          ) : (
+            <pre className="text-sm text-slate-700 dark:text-slate-300 line-clamp-4 overflow-hidden">
+              <code>{paste.content}</code>
+            </pre>
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50 dark:to-slate-900 pointer-events-none"></div>
         </div>
 

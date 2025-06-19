@@ -79,7 +79,7 @@ export const useRelatedContent = (currentPaste: Paste): UseRelatedContentReturn 
 
       // Find pastes with similar content (basic keyword matching)
       const currentWords = new Set(
-        currentPaste.content
+        (currentPaste.content || '')
           .toLowerCase()
           .replace(/[^\w\s]/g, ' ')
           .split(/\s+/)
@@ -93,7 +93,7 @@ export const useRelatedContent = (currentPaste: Paste): UseRelatedContentReturn 
         )
         .map(paste => {
           const pasteWords = new Set(
-            paste.content
+            (paste.content || '')
               .toLowerCase()
               .replace(/[^\w\s]/g, ' ')
               .split(/\s+/)
