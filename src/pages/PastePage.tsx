@@ -286,30 +286,6 @@ export const PastePage: React.FC = () => {
     );
   }
 
-  if (error || !paste) {
-    return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center min-h-[400px] flex items-center justify-center">
-          <div>
-            <div className="text-6xl mb-4">😞</div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Paste Not Found
-            </h1>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              {error || "The paste you're looking for doesn't exist or has been removed."}
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all"
-            >
-              Go Home
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (passwordRequired) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -336,6 +312,30 @@ export const PastePage: React.FC = () => {
           >
             Verify
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !paste) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center min-h-[400px] flex items-center justify-center">
+          <div>
+            <div className="text-6xl mb-4">😞</div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              Paste Not Found
+            </h1>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              {error || "The paste you're looking for doesn't exist or has been removed."}
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all"
+            >
+              Go Home
+            </button>
+          </div>
         </div>
       </div>
     );
