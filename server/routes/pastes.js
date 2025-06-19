@@ -578,11 +578,13 @@ router.post('/:id/verify', async (req, res) => {
     }
 
     if (!req.session.verifiedPastes) req.session.verifiedPastes = [];
-    if (!req.session.verifiedPastes.includes(pasteId)) {
-      req.session.verifiedPastes.push(pasteId);
-    }
+    req.session.verifiedPastes.push(pasteId);
 
-    req.session.save(() => {
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ error: 'Failed to save session' });
+      }
       res.json({ success: true });
     });
   } catch (error) {
