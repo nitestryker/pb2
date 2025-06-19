@@ -14,7 +14,7 @@ interface AppState {
   
   // Pastes
   loadRecentPastes: () => Promise<void>;
-  addPaste: (paste: Omit<Paste, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string | null>;
+  addPaste: (paste: Omit<Paste, 'id' | 'createdAt' | 'updatedAt'> & { password?: string }) => Promise<string | null>;
   updatePaste: (id: string, updates: Partial<Paste>) => void;
   deletePaste: (id: string) => void;
   
@@ -102,7 +102,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         encryptedContent: pasteData.encryptedContent,
         tags: pasteData.tags,
         expiration: pasteData.expiresAt,
-        burnAfterRead: pasteData.burnAfterRead
+        burnAfterRead: pasteData.burnAfterRead,
+        password: pasteData.password
       });
       
       console.log('✅ Paste created successfully:', response.id);

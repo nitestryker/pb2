@@ -204,6 +204,12 @@ router.get('/:id', async (req, res) => {
       // TODO: Check if user is authenticated and is the owner
       return res.status(403).json({ error: 'This paste is private' });
     }
+
+    // Check for password protection
+    const verified = req.session.verifiedPastes?.includes(pasteId);
+    if (row.password && !verified) {
+      return res.status(401).json({ error: 'Password required', passwordRequired: true });
+    }
     
     // Track unique views by IP address
     const ip = (req.headers['x-forwarded-for']?.split(',')[0] || req.ip).trim();
@@ -276,6 +282,8 @@ router.post('/', async (req, res) => {
       expiration,
       tags = [],
       burnAfterRead = false
+      ,
+      password
     } = req.body;
     
     if (!title || (!content && !isZeroKnowledge)) {
@@ -323,21 +331,29 @@ router.post('/', async (req, res) => {
     }
     
     await client.query('BEGIN');
+
+    // Hash password if provided
+    let hashedPassword = null;
+    if (password) {
+      const bcrypt = await import('bcrypt');
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
     
     // Insert paste
     const pasteResult = await client.query(`
       INSERT INTO pastes (
-        title, 
-        content, 
-        syntax_language, 
-        author_id, 
-        is_private, 
+        title,
+        content,
+        syntax_language,
+        author_id,
+        is_private,
         is_zero_knowledge,
-      encrypted_content,
-      expiration,
-      burn_after_read
+        encrypted_content,
+        expiration,
+        burn_after_read,
+        password
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `, [
       title,
@@ -348,7 +364,8 @@ router.post('/', async (req, res) => {
       isZeroKnowledge,
       isZeroKnowledge ? encryptedContent : null,
       expiration ? new Date(expiration) : null,
-      burnAfterRead
+      burnAfterRead,
+      hashedPassword
     ]);
     
     const paste = pasteResult.rows[0];
@@ -401,8 +418,8 @@ router.get('/:id/download', async (req, res) => {
     }
     
     const result = await pool.query(`
-      SELECT title, content, syntax_language, is_private, is_zero_knowledge, expiration
-      FROM pastes 
+      SELECT title, content, syntax_language, is_private, is_zero_knowledge, expiration, password
+      FROM pastes
       WHERE id = $1
     `, [pasteId]);
     
@@ -420,6 +437,12 @@ router.get('/:id/download', async (req, res) => {
     // Check if paste is private
     if (paste.is_private) {
       return res.status(403).json({ error: 'This paste is private' });
+    }
+
+    // Check password protection for downloads
+    const verified = req.session.verifiedPastes?.includes(pasteId);
+    if (paste.password && !verified) {
+      return res.status(403).json({ error: 'Password required' });
     }
     
     // Can't download zero-knowledge pastes (content is encrypted)
@@ -521,6 +544,46 @@ router.get('/:id/related', async (req, res) => {
   } catch (error) {
     console.error('Error fetching related pastes:', error);
     res.status(500).json({ error: 'Failed to fetch related pastes' });
+  }
+});
+
+// Verify password for a protected paste
+router.post('/:id/verify', async (req, res) => {
+  try {
+    const pasteId = parseInt(req.params.id);
+    const { password } = req.body;
+
+    if (isNaN(pasteId) || !password) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    const result = await pool.query('SELECT password FROM pastes WHERE id = $1', [pasteId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Paste not found' });
+    }
+
+    const hashed = result.rows[0].password;
+    if (!hashed) {
+      return res.status(400).json({ error: 'Paste is not password protected' });
+    }
+
+    const bcrypt = await import('bcrypt');
+    const match = await bcrypt.compare(password, hashed);
+
+    if (!match) {
+      return res.status(403).json({ error: 'Invalid password' });
+    }
+
+    if (!req.session.verifiedPastes) req.session.verifiedPastes = [];
+    if (!req.session.verifiedPastes.includes(pasteId)) {
+      req.session.verifiedPastes.push(pasteId);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Password verification error:', error);
+    res.status(500).json({ error: 'Failed to verify password' });
   }
 });
 

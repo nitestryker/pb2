@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -37,6 +38,17 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+
+// Session middleware for password-protected pastes
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'pasteforge',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
 
 // CORS configuration - Updated for Render deployment
 app.use(cors({

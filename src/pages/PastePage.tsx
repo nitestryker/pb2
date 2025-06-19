@@ -95,6 +95,8 @@ export const PastePage: React.FC = () => {
   const [showAccessLink, setShowAccessLink] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'related'>('overview');
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -131,9 +133,14 @@ export const PastePage: React.FC = () => {
     try {
       const data = await apiService.getPaste(id);
       setPaste(data);
+      setPasswordRequired(false);
     } catch (err) {
       console.error('Error fetching paste:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load paste');
+      if ((err as any).status === 401) {
+        setPasswordRequired(true);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load paste');
+      }
     } finally {
       setLoading(false);
     }
@@ -298,6 +305,37 @@ export const PastePage: React.FC = () => {
               Go Home
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (passwordRequired) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Password Required</h2>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 mb-4 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg"
+            placeholder="Enter password"
+          />
+          <button
+            onClick={async () => {
+              try {
+                await apiService.verifyPastePassword(id!, password);
+                setPassword('');
+                fetchPaste();
+              } catch (err) {
+                toast.error('Invalid password');
+              }
+            }}
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 rounded-lg"
+          >
+            Verify
+          </button>
         </div>
       </div>
     );
