@@ -101,7 +101,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         isZeroKnowledge: pasteData.isZeroKnowledge,
         encryptedContent: pasteData.encryptedContent,
         tags: pasteData.tags,
-        expiration: pasteData.expiresAt
+        expiration: pasteData.expiresAt,
+        burnAfterRead: pasteData.burnAfterRead
       });
       
       console.log('✅ Paste created successfully:', response.id);

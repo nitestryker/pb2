@@ -13,7 +13,8 @@ import {
   MessageCircle,
   ExternalLink,
   Lock,
-  Shield
+  Shield,
+  Flame
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
@@ -62,6 +63,7 @@ interface Paste {
   created_at: string;
   updated_at: string;
   tags: string[];
+  burn_after_read?: boolean;
 }
 
 interface RelatedPaste {
@@ -309,6 +311,9 @@ const ViewPastePage: React.FC = () => {
                 {paste.is_zero_knowledge && (
                   <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
                 )}
+                {paste.burn_after_read && (
+                  <Flame className="h-5 w-5 text-red-600 dark:text-red-400" />
+                )}
               </div>
               
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -336,6 +341,12 @@ const ViewPastePage: React.FC = () => {
                   <Code2 className="h-4 w-4" />
                   <span>{getLanguageDisplayName(paste.syntax_language)}</span>
                 </div>
+                {paste.burn_after_read && (
+                  <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <Flame className="h-4 w-4" />
+                    Burn After Read
+                  </span>
+                )}
               </div>
 
               {paste.tags && paste.tags.length > 0 && (

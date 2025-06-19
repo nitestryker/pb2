@@ -43,6 +43,7 @@ export const CreatePastePage: React.FC = () => {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isZeroKnowledge, setIsZeroKnowledge] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [burnAfterRead, setBurnAfterRead] = useState(false);
   
   // Zero-knowledge encryption state
   const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
@@ -197,6 +198,7 @@ export const CreatePastePage: React.FC = () => {
         encryptedContent: isZeroKnowledge ? finalEncryptedContent : undefined,
         expiresAt: expiration ? calculateExpirationDate(expiration) : undefined,
         tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        burnAfterRead,
       };
 
       const pasteId = await addPaste(pasteData);
@@ -536,6 +538,19 @@ export const CreatePastePage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex items-center space-x-2 md:col-span-2">
+                <input
+                  id="burn-after-read"
+                  type="checkbox"
+                  checked={burnAfterRead}
+                  onChange={(e) => setBurnAfterRead(e.target.checked)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 dark:border-slate-600 rounded"
+                />
+                <label htmlFor="burn-after-read" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Burn After Read (Deletes after one view)
+                </label>
               </div>
             </div>
           </div>
