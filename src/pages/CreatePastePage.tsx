@@ -327,6 +327,16 @@ export const CreatePastePage: React.FC = () => {
     }
   };
 
+  // Handle burn-after-read toggle
+  const handleBurnAfterReadToggle = (checked: boolean) => {
+    setBurnAfterRead(checked);
+
+    if (checked) {
+      // Disable zero-knowledge when burn-after-read is enabled
+      setIsZeroKnowledge(false);
+    }
+  };
+
   // Visibility options configuration
   const visibilityOptions = [
     {
@@ -463,7 +473,7 @@ export const CreatePastePage: React.FC = () => {
                   type="checkbox"
                   checked={isZeroKnowledge}
                   onChange={(e) => handleZeroKnowledgeToggle(e.target.checked)}
-                  disabled={!isWebCryptoSupported()}
+                  disabled={!isWebCryptoSupported() || burnAfterRead}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 rounded disabled:opacity-50"
                 />
               </div>
@@ -500,6 +510,18 @@ export const CreatePastePage: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                id="burn-after-read"
+                type="checkbox"
+                checked={burnAfterRead}
+                onChange={(e) => handleBurnAfterReadToggle(e.target.checked)}
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 dark:border-slate-600 rounded"
+              />
+              <label htmlFor="burn-after-read" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Burn After Read (Deletes after one view)
+              </label>
             </div>
           </div>
 
@@ -540,18 +562,6 @@ export const CreatePastePage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex items-center space-x-2 md:col-span-2">
-                <input
-                  id="burn-after-read"
-                  type="checkbox"
-                  checked={burnAfterRead}
-                  onChange={(e) => setBurnAfterRead(e.target.checked)}
-                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 dark:border-slate-600 rounded"
-                />
-                <label htmlFor="burn-after-read" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Burn After Read (Deletes after one view)
-                </label>
-              </div>
             </div>
           </div>
 
