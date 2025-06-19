@@ -84,16 +84,12 @@ export const Header: React.FC = () => {
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
+            <Link to="/create" className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+              <Plus className="h-4 w-4" />
+              <span>Create</span>
+            </Link>
             {isAuthenticated ? (
               <>
-                {/* Create Paste Button */}
-                <Link
-                  to="/create"
-                  className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create</span>
-                </Link>
 
                 {/* Notifications */}
                 <Link to="/notifications" className="relative p-2 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
@@ -222,26 +218,24 @@ export const Header: React.FC = () => {
                 </Link>
                 
                 {isAuthenticated && (
-                  <>
-                    <Link
-                      to="/projects"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center space-x-2 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400"
-                    >
-                      <Folder className="h-4 w-4" />
-                      <span>Projects</span>
-                    </Link>
-                    
-                    <Link
-                      to="/create"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg w-fit"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Create</span>
-                    </Link>
-                  </>
+                  <Link
+                    to="/projects"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-2 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400"
+                  >
+                    <Folder className="h-4 w-4" />
+                    <span>Projects</span>
+                  </Link>
                 )}
+
+                <Link
+                  to="/create"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg w-fit"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create</span>
+                </Link>
 
                 {/* Theme Toggle in Mobile Menu */}
                 <button
