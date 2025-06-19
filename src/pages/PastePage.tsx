@@ -96,6 +96,9 @@ export const PastePage: React.FC = () => {
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'related'>('overview');
+  const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
+
 
   useEffect(() => {
     if (id) {
@@ -521,6 +524,9 @@ export const PastePage: React.FC = () => {
               <div className="flex items-center space-x-1">
                 <MessageSquare className="h-4 w-4" />
                 <span>{comments.length}</span>
+
+                <span>{paste.comments ?? 0}</span>
+
                 <span>Comments</span>
               </div>
             </div>
@@ -568,6 +574,7 @@ export const PastePage: React.FC = () => {
                 </span>
               </button>
             )}
+
             <button
               onClick={() => setActiveTab('comments')}
               className={`pb-2 border-b-2 ${
