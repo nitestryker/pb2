@@ -143,6 +143,16 @@ export async function initializeDatabase() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    // Track unique paste views by IP address
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS paste_views (
+        paste_id INTEGER REFERENCES pastes(id) ON DELETE CASCADE,
+        ip_address VARCHAR(45) NOT NULL,
+        viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        PRIMARY KEY (paste_id, ip_address)
+      )
+    `);
     
     // Create indexes for better performance
     await client.query(`

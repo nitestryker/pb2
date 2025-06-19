@@ -205,11 +205,24 @@ router.get('/:id', async (req, res) => {
       return res.status(403).json({ error: 'This paste is private' });
     }
     
-    // Increment view count
-    await pool.query(
-      'UPDATE pastes SET view_count = view_count + 1 WHERE id = $1',
-      [pasteId]
+    // Track unique views by IP address
+    const ip = (req.headers['x-forwarded-for']?.split(',')[0] || req.ip).trim();
+    const viewInsert = await pool.query(
+      `INSERT INTO paste_views (paste_id, ip_address)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [pasteId, ip]
     );
+
+    let views = row.view_count;
+
+    if (viewInsert.rowCount > 0) {
+      const update = await pool.query(
+        'UPDATE pastes SET view_count = view_count + 1 WHERE id = $1 RETURNING view_count',
+        [pasteId]
+      );
+      views = update.rows[0].view_count;
+    }
     
     const paste = {
       id: row.id.toString(),
@@ -223,7 +236,7 @@ router.get('/:id', async (req, res) => {
         avatar: row.author_avatar,
         bio: row.author_bio
       },
-      views: row.view_count + 1,
+      views,
       forks: 0,
       stars: 0,
       tags: row.tags || [],
