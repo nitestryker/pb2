@@ -20,6 +20,8 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
+import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-python';
@@ -361,7 +363,7 @@ const ViewPastePage: React.FC = () => {
               </div>
               
               <div className="overflow-x-auto">
-                <pre className="!bg-transparent !m-0 !p-4">
+                <pre className="!bg-transparent !m-0 !p-4 line-numbers">
                   <code className={`language-${paste.syntax_language}`}>
                     {paste.content}
                   </code>
