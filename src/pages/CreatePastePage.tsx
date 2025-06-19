@@ -30,7 +30,7 @@ const expirationOptions = [
 
 export const CreatePastePage: React.FC = () => {
   const navigate = useNavigate();
-  const { addPaste } = useAppStore();
+  const { addPaste, checkBackendStatus } = useAppStore();
   const { user, isAuthenticated } = useAuthStore();
   
   const [title, setTitle] = useState('');
@@ -221,9 +221,11 @@ export const CreatePastePage: React.FC = () => {
       // Better error handling for different scenarios
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('sleeping')) {
-          toast.error('Server is starting up. Please wait a moment and try again.');
+          toast.error('Server is waking up or unreachable. Please try again shortly.');
+          await checkBackendStatus();
         } else if (error.message.includes('Network error')) {
           toast.error('Connection failed. Please check your internet and try again.');
+          await checkBackendStatus();
         } else {
           toast.error(error.message || 'Failed to create paste. Please try again.');
         }
