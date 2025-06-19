@@ -250,6 +250,7 @@ class ApiService {
     encryptedContent?: string;
     expiration?: string;
     tags?: string[];
+    burnAfterRead?: boolean;
   }) {
     return this.makeRequest(`${API_BASE_URL}/pastes`, {
       method: 'POST',

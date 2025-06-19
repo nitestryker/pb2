@@ -26,6 +26,7 @@ export interface Paste {
   isPublic: boolean;
   isUnlisted?: boolean; // New field for unlisted pastes
   isZeroKnowledge?: boolean; // New field for zero-knowledge encryption
+  burnAfterRead?: boolean; // Delete after one view
   encryptedContent?: string; // Encrypted content for zero-knowledge pastes
   views: number;
   forks: number;

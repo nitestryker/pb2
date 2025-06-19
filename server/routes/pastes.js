@@ -245,11 +245,16 @@ router.get('/:id', async (req, res) => {
       expiresAt: row.expiration ? row.expiration.toISOString() : null,
       isPublic: !row.is_private,
       isZeroKnowledge: row.is_zero_knowledge,
+      burnAfterRead: row.burn_after_read,
       version: 1,
       versions: []
     };
-    
+
     res.json(paste);
+
+    if (row.burn_after_read) {
+      await pool.query('DELETE FROM pastes WHERE id = $1', [pasteId]);
+    }
   } catch (error) {
     console.error('Error fetching paste:', error);
     res.status(500).json({ error: 'Failed to fetch paste' });
@@ -269,7 +274,8 @@ router.post('/', async (req, res) => {
       isZeroKnowledge = false,
       encryptedContent,
       expiration,
-      tags = []
+      tags = [],
+      burnAfterRead = false
     } = req.body;
     
     if (!title || (!content && !isZeroKnowledge)) {
@@ -327,10 +333,11 @@ router.post('/', async (req, res) => {
         author_id, 
         is_private, 
         is_zero_knowledge,
-        encrypted_content,
-        expiration
+      encrypted_content,
+      expiration,
+      burn_after_read
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `, [
       title,
@@ -340,7 +347,8 @@ router.post('/', async (req, res) => {
       isZeroKnowledge ? false : isPrivate, // Zero-knowledge pastes are always unlisted (not private, not public)
       isZeroKnowledge,
       isZeroKnowledge ? encryptedContent : null,
-      expiration ? new Date(expiration) : null
+      expiration ? new Date(expiration) : null,
+      burnAfterRead
     ]);
     
     const paste = pasteResult.rows[0];
@@ -368,6 +376,7 @@ router.post('/', async (req, res) => {
       language: paste.syntax_language,
       isPrivate: paste.is_private,
       isZeroKnowledge: paste.is_zero_knowledge,
+      burnAfterRead: paste.burn_after_read,
       createdAt: paste.created_at.toISOString(),
       tags,
       author: userId ? 'authenticated' : 'anonymous'

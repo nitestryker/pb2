@@ -23,6 +23,7 @@ import {
   Lock,
   Loader,
   Link,
+  Flame,
   CheckCircle,
   X
 } from 'lucide-react';
@@ -60,6 +61,7 @@ interface PasteData {
   expiresAt?: string;
   isPublic: boolean;
   isZeroKnowledge: boolean;
+  burnAfterRead?: boolean;
   version: number;
   versions: any[];
 }
@@ -375,6 +377,12 @@ export const PastePage: React.FC = () => {
                   <div className="flex items-center space-x-1 px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium rounded-full">
                     <Lock className="h-4 w-4" />
                     <span>Unlisted</span>
+                  </div>
+                )}
+                {paste.burnAfterRead && (
+                  <div className="flex items-center space-x-1 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm font-medium rounded-full">
+                    <Flame className="h-4 w-4" />
+                    <span>Burn After Read</span>
                   </div>
                 )}
               </div>
