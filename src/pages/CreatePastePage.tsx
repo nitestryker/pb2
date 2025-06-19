@@ -296,8 +296,10 @@ export const CreatePastePage: React.FC = () => {
   // Handle zero-knowledge toggle
   const handleZeroKnowledgeToggle = (checked: boolean) => {
     setIsZeroKnowledge(checked);
-    
+
     if (checked) {
+      // Disable burn-after-read when zero-knowledge is enabled
+      setBurnAfterRead(false);
       // Zero-knowledge pastes are automatically unlisted
       setVisibility('unlisted');
       
@@ -517,6 +519,7 @@ export const CreatePastePage: React.FC = () => {
                 type="checkbox"
                 checked={burnAfterRead}
                 onChange={(e) => handleBurnAfterReadToggle(e.target.checked)}
+                disabled={isZeroKnowledge}
                 className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 dark:border-slate-600 rounded"
               />
               <label htmlFor="burn-after-read" className="text-sm font-medium text-slate-700 dark:text-slate-300">
