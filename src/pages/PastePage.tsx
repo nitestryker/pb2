@@ -64,6 +64,22 @@ interface PasteData {
   versions: any[];
 }
 
+interface RelatedPaste {
+  paste: {
+    id: string;
+    title: string;
+    language: string;
+    author: {
+      username: string;
+      avatar?: string;
+    };
+    createdAt: string;
+    views: number;
+  };
+  relevanceScore: number;
+  reason: string;
+}
+
 export const PastePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -75,6 +91,8 @@ export const PastePage: React.FC = () => {
   const [decryptionError, setDecryptionError] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [showAccessLink, setShowAccessLink] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'related'>('overview');
+  const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -96,6 +114,12 @@ export const PastePage: React.FC = () => {
     }
   }, [paste]);
 
+  useEffect(() => {
+    if (id) {
+      fetchRelated();
+    }
+  }, [id]);
+
   const fetchPaste = async () => {
     if (!id) return;
     
@@ -110,6 +134,16 @@ export const PastePage: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to load paste');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelated = async () => {
+    if (!id) return;
+    try {
+      const data = await apiService.getRelatedPastes(id);
+      setRelatedPastes(data);
+    } catch (err) {
+      console.error('Error fetching related pastes:', err);
     }
   };
 
@@ -453,9 +487,41 @@ export const PastePage: React.FC = () => {
           )}
         </div>
 
-        {/* Zero-Knowledge Decryption Status */}
-        {paste.isZeroKnowledge && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <div className="border-b border-slate-200 dark:border-slate-700 mt-6">
+          <nav className="-mb-px flex space-x-4 text-sm font-medium" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`pb-2 border-b-2 ${
+                activeTab === 'overview'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              Overview
+            </button>
+            {relatedPastes.length > 0 && (
+              <button
+                onClick={() => setActiveTab('related')}
+                className={`pb-2 border-b-2 ${
+                  activeTab === 'related'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } flex items-center space-x-1`}
+              >
+                <span>Related</span>
+                <span className="px-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs">
+                  {relatedPastes.length}
+                </span>
+              </button>
+            )}
+          </nav>
+        </div>
+
+        {activeTab === 'overview' && (
+          <>
+            {/* Zero-Knowledge Decryption Status */}
+            {paste.isZeroKnowledge && (
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
             {isDecrypting ? (
               <div className="flex items-center space-x-3 text-blue-600 dark:text-blue-400">
                 <Loader className="h-5 w-5 animate-spin" />
@@ -548,6 +614,34 @@ export const PastePage: React.FC = () => {
             )}
           </div>
         </div>
+          </>
+        )}
+
+        {activeTab === 'related' && (
+          <div className="grid gap-4 mt-6">
+            {relatedPastes.map((rel) => (
+              <div
+                key={rel.paste.id}
+                className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="font-medium text-slate-900 dark:text-white">
+                    {rel.paste.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {rel.paste.author.username}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate(`/paste/${rel.paste.id}`)}
+                  className="text-indigo-600 hover:underline"
+                >
+                  View
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
     </div>
   );
