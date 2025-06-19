@@ -10,10 +10,11 @@ router.get('/recent', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     
     const result = await pool.query(`
-      SELECT 
+      SELECT
         p.id,
         p.title,
         p.content,
+        p.password,
         p.syntax_language,
         p.view_count,
         p.created_at,
@@ -35,7 +36,7 @@ router.get('/recent', async (req, res) => {
       WHERE p.is_private = FALSE 
         AND p.is_zero_knowledge = FALSE 
         AND (p.expiration IS NULL OR p.expiration > NOW())
-      GROUP BY p.id, u.id, u.username, u.avatar_url
+      GROUP BY p.id, p.password, u.id, u.username, u.avatar_url
       ORDER BY p.created_at DESC
       LIMIT $1
     `, [limit]);
@@ -43,7 +44,7 @@ router.get('/recent', async (req, res) => {
     const pastes = result.rows.map(row => ({
       id: row.id.toString(),
       title: row.title,
-      content: row.content,
+      content: row.password ? null : row.content,
       language: row.syntax_language,
       author: {
         id: row.author_id ? row.author_id.toString() : 'anonymous',
@@ -93,6 +94,7 @@ router.get('/archive', async (req, res) => {
         p.id,
         p.title,
         p.content,
+        p.password,
         p.syntax_language,
         p.view_count,
         p.created_at,
@@ -114,7 +116,7 @@ router.get('/archive', async (req, res) => {
       WHERE p.is_private = FALSE 
         AND p.is_zero_knowledge = FALSE 
         AND (p.expiration IS NULL OR p.expiration > NOW())
-      GROUP BY p.id, u.id, u.username, u.avatar_url
+      GROUP BY p.id, p.password, u.id, u.username, u.avatar_url
       ORDER BY p.created_at DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
@@ -122,7 +124,7 @@ router.get('/archive', async (req, res) => {
     const pastes = result.rows.map(row => ({
       id: row.id.toString(),
       title: row.title,
-      content: row.content,
+      content: row.password ? null : row.content,
       language: row.syntax_language,
       author: {
         id: row.author_id ? row.author_id.toString() : 'anonymous',
@@ -580,7 +582,9 @@ router.post('/:id/verify', async (req, res) => {
       req.session.verifiedPastes.push(pasteId);
     }
 
-    res.json({ success: true });
+    req.session.save(() => {
+      res.json({ success: true });
+    });
   } catch (error) {
     console.error('Password verification error:', error);
     res.status(500).json({ error: 'Failed to verify password' });

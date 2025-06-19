@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Code, User, Tag, FileText, ArrowRight } from 'lucide-react';
+import { Code, User, Tag, FileText, ArrowRight, Lock } from 'lucide-react';
 import { RelatedPaste } from '../../types';
 
 interface RelatedPastesProps {
@@ -112,9 +112,16 @@ export const RelatedPastes: React.FC<RelatedPastesProps> = ({
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 mb-3">
-                  <pre className="text-xs text-slate-700 dark:text-slate-300 line-clamp-3 overflow-hidden">
-                    <code>{related.paste.content}</code>
-                  </pre>
+                  {related.paste.content === null ? (
+                    <div className="flex items-center text-slate-500 dark:text-slate-400 space-x-1">
+                      <Lock className="h-3 w-3" />
+                      <span>🔒 Password protected</span>
+                    </div>
+                  ) : (
+                    <pre className="text-xs text-slate-700 dark:text-slate-300 line-clamp-3 overflow-hidden">
+                      <code>{related.paste.content}</code>
+                    </pre>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">

@@ -19,7 +19,7 @@ export const ExplorePage: React.FC = () => {
   const filteredAndSortedPastes = useMemo(() => {
     let filtered = pastes.filter(paste => {
       const matchesSearch = paste.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           paste.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (paste.content || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                            paste.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesLanguage = !selectedLanguage || paste.language === selectedLanguage;
       return matchesSearch && matchesLanguage && paste.isPublic;

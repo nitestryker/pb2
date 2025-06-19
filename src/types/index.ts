@@ -17,7 +17,7 @@ export interface User {
 export interface Paste {
   id: string;
   title: string;
-  content: string;
+  content: string | null;
   language: string;
   author: User;
   createdAt: string;
