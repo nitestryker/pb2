@@ -64,11 +64,17 @@ export async function initializeDatabase() {
         is_zero_knowledge BOOLEAN DEFAULT FALSE,
         encrypted_content TEXT,
         expiration TIMESTAMP WITH TIME ZONE,
+        burn_after_read BOOLEAN DEFAULT FALSE,
         view_count INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    // Ensure burn_after_read column exists for existing installations
+    await client.query(
+      `ALTER TABLE pastes ADD COLUMN IF NOT EXISTS burn_after_read BOOLEAN DEFAULT FALSE`
+    );
     
     // Create paste_tags table
     await client.query(`
