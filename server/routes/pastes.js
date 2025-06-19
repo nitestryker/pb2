@@ -515,4 +515,79 @@ router.get('/:id/related', async (req, res) => {
   }
 });
 
+// Get comments for a paste
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const pasteId = parseInt(req.params.id);
+    if (isNaN(pasteId)) {
+      return res.status(400).json({ error: 'Invalid paste ID' });
+    }
+
+    const result = await pool.query(
+      `SELECT c.*, u.username, u.avatar_url
+       FROM comments c
+       LEFT JOIN users u ON c.author_id = u.id
+       WHERE c.paste_id = $1
+       ORDER BY c.created_at ASC`,
+      [pasteId]
+    );
+
+    const comments = result.rows.map(row => ({
+      id: row.id.toString(),
+      content: row.content,
+      createdAt: row.created_at.toISOString(),
+      updatedAt: row.updated_at.toISOString(),
+      parentId: row.parent_id ? row.parent_id.toString() : null,
+      author: {
+        id: row.author_id ? row.author_id.toString() : 'anonymous',
+        username: row.username || 'Anonymous',
+        avatar: row.avatar_url
+      }
+    }));
+
+    res.json(comments);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+// Get discussion threads for a paste
+router.get('/:id/discussions', async (req, res) => {
+  try {
+    const pasteId = parseInt(req.params.id);
+    if (isNaN(pasteId)) {
+      return res.status(400).json({ error: 'Invalid paste ID' });
+    }
+
+    const result = await pool.query(
+      `SELECT t.*, u.username, u.avatar_url,
+              (SELECT COUNT(*) FROM discussion_posts p WHERE p.thread_id = t.id) AS post_count
+       FROM discussion_threads t
+       LEFT JOIN users u ON t.author_id = u.id
+       WHERE t.paste_id = $1
+       ORDER BY t.created_at DESC`,
+      [pasteId]
+    );
+
+    const threads = result.rows.map(row => ({
+      id: row.id.toString(),
+      title: row.title,
+      category: row.category,
+      createdAt: row.created_at.toISOString(),
+      author: {
+        id: row.author_id ? row.author_id.toString() : 'anonymous',
+        username: row.username || 'Anonymous',
+        avatar: row.avatar_url
+      },
+      postCount: parseInt(row.post_count)
+    }));
+
+    res.json(threads);
+  } catch (error) {
+    console.error('Error fetching discussions:', error);
+    res.status(500).json({ error: 'Failed to fetch discussions' });
+  }
+});
+
 export default router;
