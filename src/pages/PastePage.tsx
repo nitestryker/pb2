@@ -303,7 +303,7 @@ export const PastePage: React.FC = () => {
               try {
                 await apiService.verifyPastePassword(id!, password);
                 setPassword('');
-                fetchPaste();
+                navigate(`/paste/${id}`);
               } catch (err) {
                 toast.error('Invalid password');
               }
