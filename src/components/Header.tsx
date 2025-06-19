@@ -61,17 +61,10 @@ const Header: React.FC = () => {
             >
               Archive
             </Link>
-            <Link
-              to="/create"
-              className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Paste</span>
-            </Link>
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -84,6 +77,14 @@ const Header: React.FC = () => {
                 <Moon className="h-5 w-5" />
               )}
             </button>
+
+            <Link
+              to="/create"
+              className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create</span>
+            </Link>
 
             {/* User Menu */}
             {user ? (
@@ -139,7 +140,7 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Link
                   to="/login"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   Login
                 </Link>
@@ -147,7 +148,7 @@ const Header: React.FC = () => {
                   to="/register"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
-                  Register
+                  Sign Up
                 </Link>
               </div>
             )}
@@ -232,7 +233,7 @@ const Header: React.FC = () => {
                   <div className="flex space-x-2">
                     <Link
                       to="/login"
-                      className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Login
@@ -242,7 +243,7 @@ const Header: React.FC = () => {
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Register
+                      Sign Up
                     </Link>
                   </div>
                 )}
