@@ -251,6 +251,7 @@ class ApiService {
     expiration?: string;
     tags?: string[];
     burnAfterRead?: boolean;
+    password?: string;
   }) {
     return this.makeRequest(`${API_BASE_URL}/pastes`, {
       method: 'POST',
@@ -283,6 +284,13 @@ class ApiService {
     }
     
     return response.blob();
+  }
+
+  async verifyPastePassword(id: string, password: string) {
+    return this.makeRequest(`${API_BASE_URL}/pastes/${id}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    });
   }
 
   // User endpoints

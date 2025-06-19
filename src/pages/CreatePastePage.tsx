@@ -39,6 +39,7 @@ export const CreatePastePage: React.FC = () => {
   const [visibility, setVisibility] = useState<'public' | 'unlisted' | 'private'>('public');
   const [expiration, setExpiration] = useState('');
   const [tags, setTags] = useState('');
+  const [password, setPassword] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isZeroKnowledge, setIsZeroKnowledge] = useState(false);
@@ -199,6 +200,7 @@ export const CreatePastePage: React.FC = () => {
         expiresAt: expiration ? calculateExpirationDate(expiration) : undefined,
         tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
         burnAfterRead,
+        password: password.trim() || undefined,
       };
 
       const pasteId = await addPaste(pasteData);
@@ -662,14 +664,28 @@ export const CreatePastePage: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Tags (comma-separated)
             </label>
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="react, hooks, javascript, utility"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
-            />
-          </div>
+          <input
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="react, hooks, javascript, utility"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+          />
+        </div>
+
+        {/* Optional password */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Password Protect this Paste (Optional)
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+          />
+        </div>
 
           {/* Code Editor */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
