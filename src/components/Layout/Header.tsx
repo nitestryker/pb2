@@ -85,13 +85,6 @@ export const Header: React.FC = () => {
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
-            <Link
-              to="/create"
-              className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create</span>
-            </Link>
             {isAuthenticated ? (
               <>
 
@@ -112,8 +105,7 @@ export const Header: React.FC = () => {
                     ) : (
                       <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
                         <User className="h-4 w-4 text-white" />
-                      </div>
-                    )}
+              </div>
                     <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-200">
                       {user?.username}
                     </span>
@@ -166,22 +158,34 @@ export const Header: React.FC = () => {
                   </AnimatePresence>
                 </div>
               </>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <Link
-                  to="/login"
-                  className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+            ) : null}
+
+            <div className="flex items-center space-x-3">
+              <Link
+                to="/create"
+                className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create</span>
+              </Link>
+
+              {!isAuthenticated && (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-3 py-1.5 text-sm font-medium border border-indigo-500 text-indigo-600 rounded-md hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <button
