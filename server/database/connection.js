@@ -144,29 +144,6 @@ export async function initializeDatabase() {
       )
     `);
 
-    // Create discussion tables
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS discussion_threads (
-        id SERIAL PRIMARY KEY,
-        paste_id INTEGER REFERENCES pastes(id) ON DELETE CASCADE,
-        author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        title VARCHAR(255) NOT NULL,
-        category VARCHAR(20) NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      )
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS discussion_posts (
-        id SERIAL PRIMARY KEY,
-        thread_id INTEGER REFERENCES discussion_threads(id) ON DELETE CASCADE,
-        author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        content TEXT NOT NULL,
-        parent_id INTEGER REFERENCES discussion_posts(id) ON DELETE CASCADE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      )
-    `);
-    
     // Track unique paste views by IP address
     await client.query(`
       CREATE TABLE IF NOT EXISTS paste_views (
@@ -186,8 +163,6 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_paste_tags_paste_id ON paste_tags(paste_id);
       CREATE INDEX IF NOT EXISTS idx_paste_tags_tag ON paste_tags(tag);
       CREATE INDEX IF NOT EXISTS idx_comments_paste_id ON comments(paste_id);
-      CREATE INDEX IF NOT EXISTS idx_discussion_threads_paste_id ON discussion_threads(paste_id);
-      CREATE INDEX IF NOT EXISTS idx_discussion_posts_thread_id ON discussion_posts(thread_id);
       CREATE INDEX IF NOT EXISTS idx_projects_author_id ON projects(author_id);
       CREATE INDEX IF NOT EXISTS idx_projects_public ON projects(is_public);
     `);

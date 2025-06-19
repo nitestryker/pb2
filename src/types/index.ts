@@ -113,15 +113,6 @@ export interface Comment {
   replies?: Comment[];
 }
 
-export interface DiscussionThread {
-  id: string;
-  title: string;
-  category: 'Q&A' | 'Tip' | 'Idea' | 'Bug' | 'General';
-  author: User;
-  createdAt: string;
-  postCount: number;
-}
-
 export interface AISummary {
   id: string;
   content: string;
