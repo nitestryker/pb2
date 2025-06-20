@@ -238,8 +238,11 @@ class ApiService {
     return this.makeRequest(`${API_BASE_URL}/pastes/archive?page=${page}&limit=${limit}`);
   }
 
-  async getPaste(id: string) {
-    return this.makeRequest(`${API_BASE_URL}/pastes/${id}`);
+  async getPaste(id: string, authToken?: string) {
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+    return this.makeRequest(`${API_BASE_URL}/pastes/${id}`, {
+      headers
+    });
   }
 
   async createPaste(pasteData: {
@@ -275,9 +278,11 @@ class ApiService {
     }
   }
 
-  async downloadPaste(id: string) {
+  async downloadPaste(id: string, authToken?: string) {
     const response = await fetch(`${API_BASE_URL}/pastes/${id}/download`, {
-      headers: this.getAuthHeaders()
+      headers: authToken
+        ? { Authorization: `Bearer ${authToken}` }
+        : this.getAuthHeaders()
     });
     
     if (!response.ok) {
@@ -290,8 +295,7 @@ class ApiService {
   async verifyPastePassword(id: string, password: string) {
     return this.makeRequest(`${API_BASE_URL}/pastes/${id}/verify`, {
       method: 'POST',
-      body: JSON.stringify({ password }),
-      credentials: 'include'
+      body: JSON.stringify({ password })
     });
   }
 
