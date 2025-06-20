@@ -577,16 +577,10 @@ router.post('/:id/verify', async (req, res) => {
       return res.status(403).json({ error: 'Invalid password' });
     }
 
-    if (!req.session.verifiedPastes) req.session.verifiedPastes = [];
+    req.session.verifiedPastes = req.session.verifiedPastes || [];
     req.session.verifiedPastes.push(pasteId);
 
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).json({ error: 'Failed to save session' });
-      }
-      res.json({ success: true });
-    });
+    return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Password verification error:', error);
     res.status(500).json({ error: 'Failed to verify password' });
