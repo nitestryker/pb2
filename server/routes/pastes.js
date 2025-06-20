@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../database/connection.js';
 import { authenticateToken } from '../middleware/auth.js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -207,10 +208,23 @@ router.get('/:id', async (req, res) => {
       return res.status(403).json({ error: 'This paste is private' });
     }
 
-    // Check for password protection
-    const verified = req.session?.verifiedPastes?.includes(pasteId);
-    if (row.password && !verified) {
-      return res.status(401).json({ error: 'Password required', passwordRequired: true });
+    // Check for password protection using JWT token
+    if (row.password) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ error: 'Password required', passwordRequired: true });
+      }
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.pasteId !== pasteId) {
+          return res.status(403).json({ error: 'Invalid token' });
+        }
+      } catch {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
     }
     
     // Track unique views by IP address
@@ -441,10 +455,23 @@ router.get('/:id/download', async (req, res) => {
       return res.status(403).json({ error: 'This paste is private' });
     }
 
-    // Check password protection for downloads
-    const verified = req.session?.verifiedPastes?.includes(pasteId);
-    if (paste.password && !verified) {
-      return res.status(401).json({ error: 'Password required' });
+    // Check password protection for downloads using JWT token
+    if (paste.password) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ error: 'Password required' });
+      }
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.pasteId !== pasteId) {
+          return res.status(403).json({ error: 'Invalid token' });
+        }
+      } catch {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
     }
     
     // Can't download zero-knowledge pastes (content is encrypted)
@@ -575,10 +602,9 @@ router.post('/:id/verify', async (req, res) => {
       return res.status(403).json({ error: 'Invalid password' });
     }
 
-    req.session.verifiedPastes = req.session.verifiedPastes || [];
-    req.session.verifiedPastes.push(pasteId);
+    const token = jwt.sign({ pasteId }, process.env.JWT_SECRET, { expiresIn: '10m' });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ token });
   } catch (error) {
     console.error('Password verification error:', error);
     res.status(500).json({ error: 'Failed to verify password' });
