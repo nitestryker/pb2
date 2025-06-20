@@ -4,6 +4,12 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const PUBLIC_PASTE_FILTER = `
+  p.is_private = FALSE
+  AND p.is_zero_knowledge = FALSE
+  AND (p.expiration IS NULL OR p.expiration > NOW())
+`;
+
 // Get recent public pastes
 router.get('/recent', async (req, res) => {
   try {
@@ -33,9 +39,7 @@ router.get('/recent', async (req, res) => {
       FROM pastes p
       LEFT JOIN users u ON p.author_id = u.id
       LEFT JOIN paste_tags pt ON p.id = pt.paste_id
-      WHERE p.is_private = FALSE 
-        AND p.is_zero_knowledge = FALSE 
-        AND (p.expiration IS NULL OR p.expiration > NOW())
+      WHERE ${PUBLIC_PASTE_FILTER}
       GROUP BY p.id, p.password, u.id, u.username, u.avatar_url
       ORDER BY p.created_at DESC
       LIMIT $1
@@ -80,9 +84,7 @@ router.get('/archive', async (req, res) => {
     const countResult = await pool.query(`
       SELECT COUNT(*) as total
       FROM pastes p
-      WHERE p.is_private = FALSE 
-        AND p.is_zero_knowledge = FALSE 
-        AND (p.expiration IS NULL OR p.expiration > NOW())
+      WHERE ${PUBLIC_PASTE_FILTER}
     `);
     
     const total = parseInt(countResult.rows[0].total);
@@ -113,9 +115,7 @@ router.get('/archive', async (req, res) => {
       FROM pastes p
       LEFT JOIN users u ON p.author_id = u.id
       LEFT JOIN paste_tags pt ON p.id = pt.paste_id
-      WHERE p.is_private = FALSE 
-        AND p.is_zero_knowledge = FALSE 
-        AND (p.expiration IS NULL OR p.expiration > NOW())
+      WHERE ${PUBLIC_PASTE_FILTER}
       GROUP BY p.id, p.password, u.id, u.username, u.avatar_url
       ORDER BY p.created_at DESC
       LIMIT $1 OFFSET $2
@@ -510,11 +510,9 @@ router.get('/:id/related', async (req, res) => {
       FROM pastes p
       LEFT JOIN users u ON p.author_id = u.id
       WHERE p.id != $1
-        AND p.is_private = FALSE 
-        AND p.is_zero_knowledge = FALSE 
-        AND (p.expiration IS NULL OR p.expiration > NOW())
+        AND ${PUBLIC_PASTE_FILTER}
         AND (
-          (p.author_id = $2 AND p.author_id IS NOT NULL) OR 
+          (p.author_id = $2 AND p.author_id IS NOT NULL) OR
           p.syntax_language = $3
         )
       ORDER BY relevance_score DESC, p.created_at DESC
