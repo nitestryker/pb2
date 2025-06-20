@@ -17,6 +17,18 @@ import adminRoutes from './routes/admin.js';
 // Import database
 import pool, { testConnection, initializeDatabase } from './database/connection.js';
 
+// Ensure session table exists for connect-pg-simple
+async function createSessionTableIfNotExists() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "session" (
+      "sid" varchar NOT NULL PRIMARY KEY,
+      "sess" json NOT NULL,
+      "expire" timestamp(6) NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+  `);
+}
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -150,7 +162,11 @@ async function startServer() {
     console.log('🏗️  Initializing database schema...');
     await initializeDatabase();
     console.log('✅ Database schema initialized');
-    
+
+    console.log('🛠️  Ensuring session table exists...');
+    await createSessionTableIfNotExists().catch(console.error);
+    console.log('✅ Session table ready');
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
