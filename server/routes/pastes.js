@@ -162,7 +162,7 @@ router.get('/archive', async (req, res) => {
 // Get single paste by ID
 router.get('/:id', async (req, res) => {
   try {
-    const pasteId = parseInt(req.params.id);
+    const pasteId = parseInt(req.params.id, 10);
     
     if (isNaN(pasteId)) {
       return res.status(400).json({ error: 'Invalid paste ID' });
@@ -208,7 +208,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check for password protection
-    const verified = req.session.verifiedPastes?.includes(pasteId);
+    const verified = req.session?.verifiedPastes?.includes(pasteId);
     if (row.password && !verified) {
       return res.status(401).json({ error: 'Password required', passwordRequired: true });
     }
@@ -413,7 +413,7 @@ router.post('/', async (req, res) => {
 // Download paste as raw text
 router.get('/:id/download', async (req, res) => {
   try {
-    const pasteId = parseInt(req.params.id);
+    const pasteId = parseInt(req.params.id, 10);
     
     if (isNaN(pasteId)) {
       return res.status(400).json({ error: 'Invalid paste ID' });
@@ -442,9 +442,9 @@ router.get('/:id/download', async (req, res) => {
     }
 
     // Check password protection for downloads
-    const verified = req.session.verifiedPastes?.includes(pasteId);
+    const verified = req.session?.verifiedPastes?.includes(pasteId);
     if (paste.password && !verified) {
-      return res.status(403).json({ error: 'Password required' });
+      return res.status(401).json({ error: 'Password required' });
     }
     
     // Can't download zero-knowledge pastes (content is encrypted)
@@ -467,7 +467,7 @@ router.get('/:id/download', async (req, res) => {
 // Get related pastes
 router.get('/:id/related', async (req, res) => {
   try {
-    const pasteId = parseInt(req.params.id);
+    const pasteId = parseInt(req.params.id, 10);
     const limit = parseInt(req.query.limit) || 6;
     
     if (isNaN(pasteId)) {
@@ -550,7 +550,7 @@ router.get('/:id/related', async (req, res) => {
 // Verify password for a protected paste
 router.post('/:id/verify', async (req, res) => {
   try {
-    const pasteId = parseInt(req.params.id);
+    const pasteId = parseInt(req.params.id, 10);
     const { password } = req.body;
 
     if (isNaN(pasteId) || !password) {
