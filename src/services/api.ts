@@ -290,7 +290,8 @@ class ApiService {
   async verifyPastePassword(id: string, password: string) {
     return this.makeRequest(`${API_BASE_URL}/pastes/${id}/verify`, {
       method: 'POST',
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password }),
+      credentials: 'include'
     });
   }
 
