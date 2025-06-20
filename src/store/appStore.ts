@@ -11,6 +11,8 @@ interface AppState {
   isLoading: boolean;
   apiError: string | null;
   backendStatus: 'unknown' | 'healthy' | 'sleeping' | 'error';
+  pasteAccessTokens: Record<string, string>;
+  setPasteAccessToken: (pasteId: string, token: string) => void;
   
   // Pastes
   loadRecentPastes: () => Promise<void>;
@@ -46,6 +48,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoading: false,
   apiError: null,
   backendStatus: 'unknown',
+  pasteAccessTokens: {},
+  setPasteAccessToken: (pasteId: string, token: string) => {
+    set((state) => ({
+      pasteAccessTokens: {
+        ...state.pasteAccessTokens,
+        [pasteId]: token,
+      },
+    }));
+  },
 
   loadRecentPastes: async () => {
     set({ isLoading: true, apiError: null });

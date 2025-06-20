@@ -97,7 +97,6 @@ export const PastePage: React.FC = () => {
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
-  const [authToken, setAuthToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -132,7 +131,9 @@ export const PastePage: React.FC = () => {
     setError(null);
     
     try {
-      const data = await apiService.getPaste(id, authToken || undefined);
+      const { pasteAccessTokens } = useAppStore.getState();
+      const token = pasteAccessTokens[id];
+      const data = await apiService.getPaste(id, token);
       setPaste(data);
       setPasswordRequired(false);
     } catch (err) {
@@ -302,11 +303,12 @@ export const PastePage: React.FC = () => {
           <button
             onClick={async () => {
               try {
+                const { setPasteAccessToken } = useAppStore.getState();
                 const response = await apiService.verifyPastePassword(id!, password);
-                setAuthToken(response.token);
+                setPasteAccessToken(id!, response.token);
                 setPassword('');
                 setPasswordRequired(false);
-                await fetchPaste();
+                navigate(`/paste/${id}`);
               } catch (err) {
                 toast.error('Invalid password');
               }
