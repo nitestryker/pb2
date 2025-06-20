@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import session from 'express-session';
-import connectPgSimple from 'connect-pg-simple';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -17,18 +15,6 @@ import adminRoutes from './routes/admin.js';
 // Import database
 import pool, { testConnection, initializeDatabase } from './database/connection.js';
 
-// Ensure session table exists for connect-pg-simple
-async function createSessionTableIfNotExists() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS "session" (
-      "sid" varchar NOT NULL PRIMARY KEY,
-      "sess" json NOT NULL,
-      "expire" timestamp(6) NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
-  `);
-}
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +22,6 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const PgSession = connectPgSimple(session);
 
 // Security middleware
 app.use(helmet({
@@ -53,19 +38,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// Session middleware for password-protected pastes
-app.use(
-  session({
-    store: new PgSession({ pool }),
-    secret: process.env.SESSION_SECRET || 'pasteforge',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000
-    }
-  })
-);
+
 
 // CORS configuration - Updated for Render deployment
 app.use(cors({
@@ -163,9 +136,6 @@ async function startServer() {
     await initializeDatabase();
     console.log('✅ Database schema initialized');
 
-    console.log('🛠️  Ensuring session table exists...');
-    await createSessionTableIfNotExists().catch(console.error);
-    console.log('✅ Session table ready');
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
