@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -14,7 +15,7 @@ import userRoutes from './routes/users.js';
 import adminRoutes from './routes/admin.js';
 
 // Import database
-import { testConnection, initializeDatabase } from './database/connection.js';
+import pool, { testConnection, initializeDatabase } from './database/connection.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const PgSession = connectPgSimple(session);
 
 // Security middleware
 app.use(helmet({
@@ -40,15 +42,18 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Session middleware for password-protected pastes
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'pasteforge',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
-  }
-}));
+app.use(
+  session({
+    store: new PgSession({ pool }),
+    secret: process.env.SESSION_SECRET || 'pasteforge',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000
+    }
+  })
+);
 
 // CORS configuration - Updated for Render deployment
 app.use(cors({
