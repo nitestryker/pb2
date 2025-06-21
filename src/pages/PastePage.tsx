@@ -359,7 +359,7 @@ export const PastePage: React.FC = () => {
         className="space-y-8"
       >
         {/* Zero-Knowledge Access Link */}
-        {paste.isZeroKnowledge && hasDecryptionKey && (
+        {paste?.isZeroKnowledge && hasDecryptionKey && (
           <div className="save-link-banner">
             🔑 This is your private access link. Save it to view your paste again.
             This zero-knowledge paste can only be accessed with the complete URL including the encryption key.
