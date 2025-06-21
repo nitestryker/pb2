@@ -65,7 +65,6 @@ export async function initializeDatabase() {
         encrypted_content TEXT,
         expiration TIMESTAMP WITH TIME ZONE,
         burn_after_read BOOLEAN DEFAULT FALSE,
-        has_been_viewed BOOLEAN DEFAULT FALSE,
         password TEXT,
         view_count INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -81,10 +80,6 @@ export async function initializeDatabase() {
     // Ensure burn_after_read column exists for existing installations
     await client.query(
       `ALTER TABLE pastes ADD COLUMN IF NOT EXISTS burn_after_read BOOLEAN DEFAULT FALSE`
-    );
-
-    await client.query(
-      `ALTER TABLE pastes ADD COLUMN IF NOT EXISTS has_been_viewed BOOLEAN DEFAULT FALSE`
     );
 
     // Add password column for optional paste protection
@@ -112,17 +107,6 @@ export async function initializeDatabase() {
         parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      )
-    `);
-
-    // Create followers table for social features
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS followers (
-        id SERIAL PRIMARY KEY,
-        follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        followee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        UNIQUE(follower_id, followee_id)
       )
     `);
     
@@ -186,40 +170,6 @@ export async function initializeDatabase() {
         PRIMARY KEY (paste_id, ip_address)
       )
     `);
-
-    // Achievements system tables
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS achievements (
-        id SERIAL PRIMARY KEY,
-        code TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        category TEXT,
-        points INTEGER DEFAULT 0,
-        icon TEXT
-      )
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_achievements (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        achievement_id INTEGER REFERENCES achievements(id),
-        awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, achievement_id)
-      )
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_achievement_progress (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        code TEXT,
-        progress INTEGER DEFAULT 0,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, code)
-      )
-    `);
     
     // Create indexes for better performance
     await client.query(`
@@ -232,19 +182,6 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_comments_paste_id ON comments(paste_id);
       CREATE INDEX IF NOT EXISTS idx_projects_author_id ON projects(author_id);
       CREATE INDEX IF NOT EXISTS idx_projects_public ON projects(is_public);
-    `);
-
-    // Seed initial achievements
-    await client.query(`
-      INSERT INTO achievements (code, name, description, category, points)
-      VALUES
-        ('first_paste', 'First Paste', 'Created your very first paste.', 'creator', 10),
-        ('paste_creator_10', '10 Pastes Created', 'Created 10 pastes.', 'creator', 25),
-        ('popular_paste_100', 'Popular Creator', 'Paste reached 100 views.', 'popularity', 30),
-        ('first_chain', 'Chain Builder', 'Created your first paste chain.', 'collaboration', 20),
-        ('early_adopter', 'Early Adopter', 'Joined PasteForge.', 'milestone', 5),
-        ('collection_creator', 'Organizer', 'Created your first collection.', 'organization', 15)
-      ON CONFLICT (code) DO NOTHING
     `);
     
     // Insert default admin user if not exists
