@@ -18,7 +18,10 @@ import {
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { apiService } from '../services/api';
+import { UserAchievements, Achievement } from '../components/Achievements/UserAchievements';
 import { PasteCard } from '../components/Paste/PasteCard';
+import { ProfileSummary as ProfileSummaryComponent } from '../components/Profile/ProfileSummary';
+import { ProfileSummary } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -47,6 +50,8 @@ export const ProfilePage: React.FC = () => {
   const [userPastes, setUserPastes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null);
   
   const isOwnProfile = currentUser?.username === username;
 
@@ -58,9 +63,10 @@ export const ProfilePage: React.FC = () => {
 
   const fetchUserProfile = async () => {
     if (!username) return;
-    
+
     setLoading(true);
     setError(null);
+    setProfileSummary(null);
     
     try {
       // If it's the current user's profile, use their data from auth store
@@ -84,6 +90,10 @@ export const ProfilePage: React.FC = () => {
         // Get user's pastes from the store (filtered by username)
         const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
         setUserPastes(filteredPastes);
+        const ach = await apiService.getUserAchievements(currentUser.id);
+        setAchievements(ach);
+        const summary = await apiService.getProfileSummary(currentUser.id);
+        setProfileSummary(summary);
       } else {
         // Fetch user data from API for other users
         try {
@@ -93,6 +103,10 @@ export const ProfilePage: React.FC = () => {
           // Fetch user's pastes
           const userPastesData = await apiService.getUserPastes(username);
           setUserPastes(userPastesData);
+          const ach = await apiService.getUserAchievements(userData.id);
+          setAchievements(ach);
+          const summary = await apiService.getProfileSummary(userData.id);
+          setProfileSummary(summary);
         } catch (apiError) {
           console.error('API error:', apiError);
           // Fallback: try to find user in local data
@@ -113,9 +127,13 @@ export const ProfilePage: React.FC = () => {
               projectCount: localUser.projectCount
             });
             
-            const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
-            setUserPastes(filteredPastes);
-          } else {
+          const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
+          setUserPastes(filteredPastes);
+          const ach = await apiService.getUserAchievements(localUser.id);
+          setAchievements(ach);
+          const summary = await apiService.getProfileSummary(localUser.id);
+          setProfileSummary(summary);
+        } else {
             throw new Error('User not found');
           }
         }
@@ -298,6 +316,9 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
+        {/* Profile Summary */}
+        <ProfileSummaryComponent summary={profileSummary} />
+
         {/* Content Tabs */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <div className="flex items-center space-x-8 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
@@ -347,6 +368,11 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Achievements */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <UserAchievements achievements={achievements} />
         </div>
 
         {/* Activity Graph Placeholder */}

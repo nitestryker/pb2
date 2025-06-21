@@ -95,11 +95,19 @@ export const PastePage: React.FC = () => {
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
-  const [hasDecryptionKey] = useState(() =>
-    typeof window !== 'undefined' &&
-    window.location.hash &&
-    window.location.hash.startsWith('#key=')
-  );
+  const [hasDecryptionKey, setHasDecryptionKey] = useState(false);
+
+  useEffect(() => {
+    const checkForKey = () => {
+      const hash = window.location.hash || '';
+      setHasDecryptionKey(hash.startsWith('#key='));
+    };
+
+    checkForKey();
+    window.addEventListener('hashchange', checkForKey);
+
+    return () => window.removeEventListener('hashchange', checkForKey);
+  }, []);
 
   const { pasteAccessTokens, setPasteAccessToken } = useAppStore();
 
@@ -359,7 +367,7 @@ export const PastePage: React.FC = () => {
         className="space-y-8"
       >
         {/* Zero-Knowledge Access Link */}
-        {paste.isZeroKnowledge && hasDecryptionKey && (
+        {paste?.isZeroKnowledge && hasDecryptionKey && (
           <div className="save-link-banner">
             🔑 This is your private access link. Save it to view your paste again.
             This zero-knowledge paste can only be accessed with the complete URL including the encryption key.
