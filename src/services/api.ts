@@ -129,7 +129,7 @@ class ApiService {
       
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('❌ Request failed for %s:', url, message);
+      console.error(`❌ Request failed for ${url}:`, message);
       if (error instanceof Error && error.stack) {
         console.debug(error.stack);
       }
@@ -306,19 +306,6 @@ class ApiService {
 
   async getUserPastes(username: string, limit = 20) {
     return this.makeRequest(`${API_BASE_URL}/users/${username}/pastes?limit=${limit}`);
-  }
-
-  async getUserAchievements(userId: string) {
-    return this.makeRequest(`${API_BASE_URL}/users/${userId}/achievements`);
-  }
-
-  async getProfileSummary(userId: string) {
-    return this.makeRequest(`${API_BASE_URL}/users/${userId}/profile-summary`);
-  }
-
-  async getAchievements(userId?: string) {
-    const query = userId ? `?userId=${userId}` : '';
-    return this.makeRequest(`${API_BASE_URL}/achievements${query}`);
   }
 
   // Admin endpoints
