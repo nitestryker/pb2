@@ -308,6 +308,15 @@ class ApiService {
     return this.makeRequest(`${API_BASE_URL}/users/${username}/pastes?limit=${limit}`);
   }
 
+  async getUserAchievements(userId: string) {
+    return this.makeRequest(`${API_BASE_URL}/users/${userId}/achievements`);
+  }
+
+  async getAchievements(userId?: string) {
+    const query = userId ? `?userId=${userId}` : '';
+    return this.makeRequest(`${API_BASE_URL}/achievements${query}`);
+  }
+
   // Admin endpoints
   async getAdminStats() {
     return this.makeRequest(`${API_BASE_URL}/admin/stats`);

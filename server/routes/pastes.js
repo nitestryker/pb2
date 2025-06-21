@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../database/connection.js';
 import { authenticateToken } from '../middleware/auth.js';
 import jwt from 'jsonwebtoken';
+import { checkPasteCreated, checkPasteViewed } from '../services/achievements.js';
 
 const router = express.Router();
 
@@ -254,6 +255,9 @@ router.get('/:id', async (req, res) => {
         [pasteId]
       );
       views = update.rows[0].view_count;
+      if (row.author_id) {
+        checkPasteViewed(pasteId, row.author_id).catch((err) => console.error('Achievement error:', err));
+      }
     }
     
     const paste = {
@@ -409,7 +413,12 @@ router.post('/', async (req, res) => {
     }
     
     await client.query('COMMIT');
-    
+
+    if (userId) {
+      // Award achievements for paste creation
+      checkPasteCreated(userId).catch((err) => console.error('Achievement error:', err));
+    }
+
     res.status(201).json({
       id: paste.id.toString(),
       title: paste.title,
