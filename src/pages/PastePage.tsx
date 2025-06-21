@@ -97,8 +97,23 @@ export const PastePage: React.FC = () => {
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
+  const [hasDecryptionKey, setHasDecryptionKey] = useState(false);
 
   const { pasteAccessTokens, setPasteAccessToken } = useAppStore();
+
+  useEffect(() => {
+    setHasDecryptionKey(window.location.hash?.startsWith('#key='));
+  }, []);
+
+  useEffect(() => {
+    if (hasDecryptionKey && paste?.id) {
+      sessionStorage.setItem(`shownBannerFor-${paste.id}`, 'true');
+    }
+  }, [hasDecryptionKey, paste]);
+
+  const hasShown = paste?.id
+    ? sessionStorage.getItem(`shownBannerFor-${paste.id}`) === 'true'
+    : false;
 
   useEffect(() => {
     if (!id) return;
@@ -133,11 +148,10 @@ export const PastePage: React.FC = () => {
   }, [paste]);
 
   useEffect(() => {
-    // Show access link for zero-knowledge pastes
-    if (paste && paste.isZeroKnowledge) {
+    if (paste && paste.isZeroKnowledge && hasDecryptionKey && !hasShown) {
       setShowAccessLink(true);
     }
-  }, [paste]);
+  }, [paste, hasDecryptionKey, hasShown]);
 
   useEffect(() => {
     if (id) {
@@ -362,7 +376,7 @@ export const PastePage: React.FC = () => {
         className="space-y-8"
       >
         {/* Zero-Knowledge Access Link */}
-        {showAccessLink && paste.isZeroKnowledge && (
+        {showAccessLink && paste.isZeroKnowledge && hasDecryptionKey && !hasShown && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
