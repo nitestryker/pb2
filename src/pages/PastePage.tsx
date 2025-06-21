@@ -25,7 +25,6 @@ import {
   Link,
   Flame,
   CheckCircle,
-  X
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { formatDistanceToNow } from 'date-fns';
@@ -92,28 +91,17 @@ export const PastePage: React.FC = () => {
   const [decryptedContent, setDecryptedContent] = useState<string>('');
   const [decryptionError, setDecryptionError] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
-  const [showAccessLink, setShowAccessLink] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'related'>('overview');
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
-  const [hasDecryptionKey, setHasDecryptionKey] = useState(false);
+  const [hasDecryptionKey] = useState(() =>
+    typeof window !== 'undefined' &&
+    window.location.hash &&
+    window.location.hash.startsWith('#key=')
+  );
 
   const { pasteAccessTokens, setPasteAccessToken } = useAppStore();
-
-  useEffect(() => {
-    setHasDecryptionKey(window.location.hash?.startsWith('#key='));
-  }, []);
-
-  useEffect(() => {
-    if (hasDecryptionKey && paste?.id) {
-      sessionStorage.setItem(`shownBannerFor-${paste.id}`, 'true');
-    }
-  }, [hasDecryptionKey, paste]);
-
-  const hasShown = paste?.id
-    ? sessionStorage.getItem(`shownBannerFor-${paste.id}`) === 'true'
-    : false;
 
   useEffect(() => {
     if (!id) return;
@@ -147,11 +135,6 @@ export const PastePage: React.FC = () => {
     }
   }, [paste]);
 
-  useEffect(() => {
-    if (paste && paste.isZeroKnowledge && hasDecryptionKey && !hasShown) {
-      setShowAccessLink(true);
-    }
-  }, [paste, hasDecryptionKey, hasShown]);
 
   useEffect(() => {
     if (id) {
@@ -376,45 +359,14 @@ export const PastePage: React.FC = () => {
         className="space-y-8"
       >
         {/* Zero-Knowledge Access Link */}
-        {showAccessLink && paste.isZeroKnowledge && hasDecryptionKey && !hasShown && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6"
-          >
-            <div className="flex items-start space-x-4">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Key className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-2">
-                  🔑 This is your private access link. Save it to view your paste again.
-                </h3>
-                <p className="text-sm text-green-800 dark:text-green-400 mb-4">
-                  This zero-knowledge paste can only be accessed with the complete URL including the encryption key. 
-                  Share this link to allow others to view the decrypted content. Without the key, this paste cannot be decrypted.
-                </p>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-700 rounded-lg p-3 font-mono text-sm break-all">
-                    {window.location.href}
-                  </div>
-                  <button
-                    onClick={handleCopyAccessLink}
-                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors"
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>Copy</span>
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAccessLink(false)}
-                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </motion.div>
+        {paste.isZeroKnowledge && hasDecryptionKey && (
+          <div className="save-link-banner">
+            🔑 This is your private access link. Save it to view your paste again.
+            This zero-knowledge paste can only be accessed with the complete URL including the encryption key.
+            Share this link to allow others to view the decrypted content. Without the key, this paste cannot be decrypted.
+
+            {window.location.href}
+          </div>
         )}
 
         {/* Header */}
