@@ -65,6 +65,7 @@ export async function initializeDatabase() {
         encrypted_content TEXT,
         expiration TIMESTAMP WITH TIME ZONE,
         burn_after_read BOOLEAN DEFAULT FALSE,
+        has_been_viewed BOOLEAN DEFAULT FALSE,
         password TEXT,
         view_count INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -80,6 +81,10 @@ export async function initializeDatabase() {
     // Ensure burn_after_read column exists for existing installations
     await client.query(
       `ALTER TABLE pastes ADD COLUMN IF NOT EXISTS burn_after_read BOOLEAN DEFAULT FALSE`
+    );
+
+    await client.query(
+      `ALTER TABLE pastes ADD COLUMN IF NOT EXISTS has_been_viewed BOOLEAN DEFAULT FALSE`
     );
 
     // Add password column for optional paste protection
