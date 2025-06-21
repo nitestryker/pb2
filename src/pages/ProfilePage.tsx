@@ -18,6 +18,7 @@ import {
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { apiService } from '../services/api';
+import { UserAchievements, Achievement } from '../components/Achievements/UserAchievements';
 import { PasteCard } from '../components/Paste/PasteCard';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -47,6 +48,7 @@ export const ProfilePage: React.FC = () => {
   const [userPastes, setUserPastes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   
   const isOwnProfile = currentUser?.username === username;
 
@@ -84,6 +86,8 @@ export const ProfilePage: React.FC = () => {
         // Get user's pastes from the store (filtered by username)
         const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
         setUserPastes(filteredPastes);
+        const ach = await apiService.getUserAchievements(currentUser.id);
+        setAchievements(ach);
       } else {
         // Fetch user data from API for other users
         try {
@@ -93,6 +97,8 @@ export const ProfilePage: React.FC = () => {
           // Fetch user's pastes
           const userPastesData = await apiService.getUserPastes(username);
           setUserPastes(userPastesData);
+          const ach = await apiService.getUserAchievements(userData.id);
+          setAchievements(ach);
         } catch (apiError) {
           console.error('API error:', apiError);
           // Fallback: try to find user in local data
@@ -113,9 +119,11 @@ export const ProfilePage: React.FC = () => {
               projectCount: localUser.projectCount
             });
             
-            const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
-            setUserPastes(filteredPastes);
-          } else {
+          const filteredPastes = pastes.filter(p => p.author.username === username && p.isPublic);
+          setUserPastes(filteredPastes);
+          const ach = await apiService.getUserAchievements(localUser.id);
+          setAchievements(ach);
+        } else {
             throw new Error('User not found');
           }
         }
@@ -347,6 +355,11 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Achievements */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <UserAchievements achievements={achievements} />
         </div>
 
         {/* Activity Graph Placeholder */}

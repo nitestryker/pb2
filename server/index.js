@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import pasteRoutes from './routes/pastes.js';
 import userRoutes from './routes/users.js';
 import adminRoutes from './routes/admin.js';
+import achievementRoutes from './routes/achievements.js';
 
 // Import database
 import pool, { testConnection, initializeDatabase } from './database/connection.js';
@@ -84,6 +85,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pastes', pasteRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', achievementRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
