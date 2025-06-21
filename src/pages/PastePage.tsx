@@ -95,11 +95,19 @@ export const PastePage: React.FC = () => {
   const [relatedPastes, setRelatedPastes] = useState<RelatedPaste[]>([]);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
-  const [hasDecryptionKey] = useState(() =>
-    typeof window !== 'undefined' &&
-    window.location.hash &&
-    window.location.hash.startsWith('#key=')
-  );
+  const [hasDecryptionKey, setHasDecryptionKey] = useState(false);
+
+  useEffect(() => {
+    const checkForKey = () => {
+      const hash = window.location.hash || '';
+      setHasDecryptionKey(hash.startsWith('#key='));
+    };
+
+    checkForKey();
+    window.addEventListener('hashchange', checkForKey);
+
+    return () => window.removeEventListener('hashchange', checkForKey);
+  }, []);
 
   const { pasteAccessTokens, setPasteAccessToken } = useAppStore();
 
