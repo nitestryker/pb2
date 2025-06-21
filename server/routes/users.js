@@ -103,4 +103,64 @@ router.get('/:username/pastes', async (req, res) => {
   }
 });
 
+// Profile summary for user by ID
+router.get('/:userId/profile-summary', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Get join date
+    const userResult = await pool.query(
+      'SELECT created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const joinDate = userResult.rows[0].created_at;
+
+    const pasteCountRes = await pool.query(
+      'SELECT COUNT(*) FROM pastes WHERE author_id = $1',
+      [userId]
+    );
+
+    const totalViewsRes = await pool.query(
+      'SELECT COALESCE(SUM(view_count), 0) FROM pastes WHERE author_id = $1',
+      [userId]
+    );
+
+    const followersRes = await pool.query(
+      'SELECT COUNT(*) FROM followers WHERE followee_id = $1',
+      [userId]
+    );
+
+    const commentsRes = await pool.query(
+      'SELECT COUNT(*) FROM comments WHERE author_id = $1',
+      [userId]
+    );
+
+    const pasteCount = parseInt(pasteCountRes.rows[0].count, 10);
+    const totalViews = parseInt(totalViewsRes.rows[0].coalesce || totalViewsRes.rows[0].sum || 0, 10);
+    const followers = parseInt(followersRes.rows[0].count, 10);
+    const comments = parseInt(commentsRes.rows[0].count, 10);
+
+    const engagement = pasteCount + comments;
+    const avgViews = pasteCount > 0 ? Math.round(totalViews / pasteCount) : 0;
+    const activityLevel = engagement >= 10 ? 'Regular contributor' : 'Getting started';
+
+    res.json({
+      accountStatus: 'Active Member',
+      joinDate: joinDate.toISOString().split('T')[0],
+      activity: activityLevel,
+      totalEngagement: engagement,
+      averageViews: avgViews,
+      followers
+    });
+  } catch (error) {
+    console.error('Error fetching profile summary:', error);
+    res.status(500).json({ error: 'Failed to fetch profile summary' });
+  }
+});
+
 export default router;

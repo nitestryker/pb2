@@ -114,6 +114,17 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    // Create followers table for social features
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS followers (
+        id SERIAL PRIMARY KEY,
+        follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        followee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(follower_id, followee_id)
+      )
+    `);
     
     // Create projects table
     await client.query(`

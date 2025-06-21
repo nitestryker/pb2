@@ -14,6 +14,15 @@ export interface User {
   projectCount: number;
 }
 
+export interface ProfileSummary {
+  accountStatus: string;
+  joinDate: string;
+  activity: string;
+  totalEngagement: number;
+  averageViews: number;
+  followers: number;
+}
+
 export interface Paste {
   id: string;
   title: string;
