@@ -98,11 +98,32 @@ export const PastePage: React.FC = () => {
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
 
+  const { pasteAccessTokens, setPasteAccessToken } = useAppStore();
+
   useEffect(() => {
-    if (id) {
-      fetchPaste();
-    }
-  }, [id]);
+    if (!id) return;
+
+    const loadPaste = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = pasteAccessTokens[id];
+        const data = await apiService.getPaste(id, token);
+        setPaste(data);
+        setPasswordRequired(false);
+      } catch (err: any) {
+        if (err.status === 401 || err.status === 403) {
+          setPasswordRequired(true);
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to load paste');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPaste();
+  }, [id, pasteAccessTokens]);
 
   useEffect(() => {
     // Handle zero-knowledge decryption when paste is loaded
@@ -123,30 +144,6 @@ export const PastePage: React.FC = () => {
       fetchRelated();
     }
   }, [id]);
-
-  const fetchPaste = async () => {
-    if (!id) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const { pasteAccessTokens } = useAppStore.getState();
-      const token = pasteAccessTokens[id];
-      const data = await apiService.getPaste(id, token);
-      setPaste(data);
-      setPasswordRequired(false);
-    } catch (err) {
-      console.error('Error fetching paste:', err);
-      if ((err as any).status === 401) {
-        setPasswordRequired(true);
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to load paste');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchRelated = async () => {
     if (!id) return;
@@ -275,6 +272,21 @@ export const PastePage: React.FC = () => {
     }
   };
 
+  const handlePasswordSubmit = async () => {
+    if (!id) return;
+    try {
+      const { token } = await apiService.verifyPastePassword(id, password);
+      setPasteAccessToken(id, token);
+
+      const pasteData = await apiService.getPaste(id, token);
+      setPaste(pasteData);
+      setPassword('');
+      setPasswordRequired(false);
+    } catch (err) {
+      toast.error('Invalid password');
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -301,18 +313,7 @@ export const PastePage: React.FC = () => {
             placeholder="Enter password"
           />
           <button
-            onClick={async () => {
-              try {
-                const { setPasteAccessToken } = useAppStore.getState();
-                const response = await apiService.verifyPastePassword(id!, password);
-                setPasteAccessToken(id!, response.token);
-                setPassword('');
-                setPasswordRequired(false);
-                navigate(`/paste/${id}`);
-              } catch (err) {
-                toast.error('Invalid password');
-              }
-            }}
+            onClick={handlePasswordSubmit}
             className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 rounded-lg"
           >
             Verify
