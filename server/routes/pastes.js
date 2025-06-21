@@ -170,8 +170,9 @@ router.get('/:id', async (req, res) => {
     }
     
     const result = await pool.query(`
-      SELECT 
+      SELECT
         p.*,
+        p.has_been_viewed,
         COALESCE(u.id, 0) as author_id,
         COALESCE(u.username, 'Anonymous') as author_username,
         u.avatar_url as author_avatar,
@@ -227,6 +228,15 @@ router.get('/:id', async (req, res) => {
       }
     }
     
+    if (row.burn_after_read) {
+      if (row.has_been_viewed) {
+        await pool.query('DELETE FROM pastes WHERE id = $1', [pasteId]);
+        return res.status(404).json({ error: 'Paste not found or expired' });
+      } else {
+        await pool.query('UPDATE pastes SET has_been_viewed = TRUE WHERE id = $1', [pasteId]);
+      }
+    }
+
     // Track unique views by IP address
     const ip = (req.headers['x-forwarded-for']?.split(',')[0] || req.ip).trim();
     const viewInsert = await pool.query(
@@ -273,10 +283,6 @@ router.get('/:id', async (req, res) => {
     };
 
     res.json(paste);
-
-    if (row.burn_after_read) {
-      await pool.query('DELETE FROM pastes WHERE id = $1', [pasteId]);
-    }
   } catch (error) {
     console.error('Error fetching paste:', error);
     res.status(500).json({ error: 'Failed to fetch paste' });
@@ -367,9 +373,10 @@ router.post('/', async (req, res) => {
         encrypted_content,
         expiration,
         burn_after_read,
+        has_been_viewed,
         password
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       title,
@@ -381,6 +388,7 @@ router.post('/', async (req, res) => {
       isZeroKnowledge ? encryptedContent : null,
       expiration ? new Date(expiration) : null,
       burnAfterRead,
+      false,
       hashedPassword
     ]);
     
