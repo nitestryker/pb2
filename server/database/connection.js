@@ -51,13 +51,13 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
-    
+
     // Create pastes table - Modified to allow NULL author_id for anonymous pastes
     await client.query(`
       CREATE TABLE IF NOT EXISTS pastes (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
+        content TEXT,
         syntax_language VARCHAR(50) NOT NULL DEFAULT 'text',
         author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         is_private BOOLEAN DEFAULT FALSE,
@@ -71,6 +71,11 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    // Ensure content column allows NULL values for zero-knowledge pastes
+    await client.query(
+      `ALTER TABLE pastes ALTER COLUMN content DROP NOT NULL`
+    );
 
     // Ensure burn_after_read column exists for existing installations
     await client.query(
