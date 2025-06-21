@@ -16,6 +16,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AdminPage } from './pages/AdminPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { EditProfile } from './pages/EditProfile';
 import { ExplorePage } from './pages/ExplorePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
@@ -96,6 +97,12 @@ function App() {
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <NotificationsPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/edit-profile" element={
+                <ProtectedRoute>
+                  <EditProfile />
                 </ProtectedRoute>
               } />
               

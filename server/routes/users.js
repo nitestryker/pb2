@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../database/connection.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -160,6 +161,95 @@ router.get('/:userId/profile-summary', async (req, res) => {
   } catch (error) {
     console.error('Error fetching profile summary:', error);
     res.status(500).json({ error: 'Failed to fetch profile summary' });
+  }
+});
+
+// Get profile data for editing
+router.get('/:userId/profile-edit', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (parseInt(userId) !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const result = await pool.query(
+      'SELECT tagline, website, profile_picture FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    res.json({
+      tagline: user.tagline || '',
+      website: user.website || '',
+      profilePicture: user.profile_picture || ''
+    });
+  } catch (error) {
+    console.error('Error fetching profile for edit:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Update profile
+router.put('/:userId/profile', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (parseInt(userId) !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const { tagline, website, profilePicture } = req.body;
+
+    if (tagline && tagline.length > 100) {
+      return res.status(400).json({ error: 'Tagline must be under 100 characters' });
+    }
+
+    if (website) {
+      try {
+        new URL(website);
+      } catch {
+        return res.status(400).json({ error: 'Invalid website URL' });
+      }
+    }
+
+    let profilePath;
+    if (profilePicture) {
+      const match = profilePicture.match(/^data:(image\/(png|jpeg|gif));base64,(.+)$/);
+      if (!match) {
+        return res.status(400).json({ error: 'Invalid image data' });
+      }
+
+      const ext = match[2] === 'jpeg' ? 'jpg' : match[2];
+      const buffer = Buffer.from(match[3], 'base64');
+      const { join, dirname } = await import('path');
+      const { fileURLToPath } = await import('url');
+      const { promises: fs } = await import('fs');
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const uploadDir = join(__dirname, '../uploads/avatars');
+      await fs.mkdir(uploadDir, { recursive: true });
+      const filename = `user_${userId}_${Date.now()}.${ext}`;
+      const fullPath = join(uploadDir, filename);
+      await fs.writeFile(fullPath, buffer);
+      profilePath = `/uploads/avatars/${filename}`;
+    }
+
+    const current = await pool.query('SELECT profile_picture FROM users WHERE id = $1', [userId]);
+    const finalPath = profilePath || current.rows[0]?.profile_picture || null;
+
+    await pool.query(
+      'UPDATE users SET tagline = $1, website = $2, profile_picture = $3, updated_at = NOW() WHERE id = $4',
+      [tagline || null, website || null, finalPath, userId]
+    );
+
+    res.json({ tagline, website, profilePicture: finalPath });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
