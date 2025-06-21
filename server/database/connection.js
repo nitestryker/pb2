@@ -44,13 +44,23 @@ export async function initializeDatabase() {
         password_hash VARCHAR(255) NOT NULL,
         avatar_url TEXT,
         bio TEXT,
+        tagline TEXT,
         website VARCHAR(255),
+        profile_picture TEXT,
         location VARCHAR(100),
         is_admin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    // Ensure new profile columns exist
+    await client.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS tagline TEXT`
+    );
+    await client.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT`
+    );
 
     // Create pastes table - Modified to allow NULL author_id for anonymous pastes
     await client.query(`

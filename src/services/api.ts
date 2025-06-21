@@ -316,6 +316,17 @@ class ApiService {
     return this.makeRequest(`${API_BASE_URL}/users/${userId}/profile-summary`);
   }
 
+  async getEditableProfile(userId: string) {
+    return this.makeRequest(`${API_BASE_URL}/users/${userId}/profile-edit`);
+  }
+
+  async updateProfile(userId: string, data: { tagline: string; website: string; profilePicture?: string }) {
+    return this.makeRequest(`${API_BASE_URL}/users/${userId}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
   async getAchievements(userId?: string) {
     const query = userId ? `?userId=${userId}` : '';
     return this.makeRequest(`${API_BASE_URL}/achievements${query}`);

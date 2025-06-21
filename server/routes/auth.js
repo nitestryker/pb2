@@ -57,7 +57,9 @@ router.post('/register', async (req, res) => {
         followers: 0,
         following: 0,
         pasteCount: 0,
-        projectCount: 0
+        projectCount: 0,
+        tagline: user.tagline,
+        avatar: user.profile_picture
       },
       token
     });
@@ -115,8 +117,9 @@ router.post('/login', async (req, res) => {
         id: user.id.toString(),
         username: user.username,
         email: user.email,
-        avatar: user.avatar_url,
+        avatar: user.profile_picture || user.avatar_url,
         bio: user.bio,
+        tagline: user.tagline,
         website: user.website,
         location: user.location,
         isAdmin: user.is_admin,
@@ -170,8 +173,9 @@ router.get('/verify', async (req, res) => {
         id: user.id.toString(),
         username: user.username,
         email: user.email,
-        avatar: user.avatar_url,
+        avatar: user.profile_picture || user.avatar_url,
         bio: user.bio,
+        tagline: user.tagline,
         website: user.website,
         location: user.location,
         isAdmin: user.is_admin,

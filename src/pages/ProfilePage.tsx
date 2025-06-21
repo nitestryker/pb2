@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -232,10 +232,12 @@ export const ProfilePage: React.FC = () => {
                   
                   <div className="flex items-center space-x-3 mt-4 sm:mt-0">
                     {isOwnProfile ? (
-                      <button className="flex items-center space-x-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                        <Settings className="h-4 w-4" />
-                        <span>Edit Profile</span>
-                      </button>
+                      <Link to="/edit-profile">
+                        <button className="flex items-center space-x-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                          <Settings className="h-4 w-4" />
+                          <span>Edit Profile</span>
+                        </button>
+                      </Link>
                     ) : (
                       <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
                         <UserPlus className="h-4 w-4" />
