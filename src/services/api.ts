@@ -129,7 +129,7 @@ class ApiService {
       
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Request failed for ${url}:`, message);
+      console.error('❌ Request failed for %s:', url, message);
       if (error instanceof Error && error.stack) {
         console.debug(error.stack);
       }
